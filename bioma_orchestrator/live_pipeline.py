@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import re
 import time
 from typing import Optional
 
@@ -136,16 +137,37 @@ async def _coordinate(provider, task: str, viable: list[Completion], model: str,
               "Synthesise the single best, fully-correct consolidated solution. "
               "Merge the strongest ideas; drop anything wrong.")
     rec.log("Coordination", f"Converging {len(viable)} hypotheses via synthesis.")
-    c = await provider.complete(prompt=prompt, model=model, max_tokens=900,
+    c = await provider.complete(prompt=prompt, model=model, max_tokens=2560,
                                 system="You are a rigorous synthesis agent.", temperature=0.1)
     if not c.error:
         rec.log("Coordination", f"Consensus reached: out {c.out_tokens} tok, rtt {c.rtt_ms:.0f}ms.")
     return c
 
 
+_CONF_INSTR = ("\n\nAfter your solution, end with a line exactly 'CONFIDENCE: N' where "
+               "N (0-100) is how likely your solution is fully correct AND complete.")
+_CONF_RE = re.compile(r"CONFIDENCE:\s*(\d{1,3})", re.I)
+
+
+def _parse_confidence(text: Optional[str]) -> Optional[int]:
+    m = _CONF_RE.search(text or "")
+    return max(0, min(100, int(m.group(1)))) if m else None
+
+
+def _strip_confidence(text: Optional[str]) -> str:
+    return _CONF_RE.sub("", text or "").rstrip()
+
+
 async def evolve(task: str, *, model: str = "openai/gpt-4o", mitosis: int = 3,
-                 context=None, provider=None) -> dict:
-    """Run the full life-cycle for ``task`` and return answer + telemetry + events."""
+                 context=None, provider=None, adaptive: bool = True,
+                 confidence_threshold: int = 80) -> dict:
+    """Run the full life-cycle for ``task`` and return answer + telemetry + events.
+
+    When ``adaptive`` (default), a single scout cell probes the task first; only if
+    its self-assessed confidence is below ``confidence_threshold`` does the colony
+    escalate to full N-way mitosis + synthesis. Easy tasks return in one call
+    (no wasted fan-out); hard/uncertain tasks get the full organism.
+    """
     rec = _Recorder()
     k = max(2, min(len(ROLES), mitosis))
 
@@ -193,36 +215,72 @@ async def evolve(task: str, *, model: str = "openai/gpt-4o", mitosis: int = 3,
                                     f"({purged} data apoptosed). Context reduced "
                                     f"{reduction * 100:.0f}% in {dt_us:.0f}μs.")
 
-        # ---- Phase 3: Neuronal Mitosis ------------------------------------ #
-        rec.log("Neuronal Mitosis", f"High-complexity threshold reached. "
-                                    f"Node duplicated into {k} parallel sub-agents ({model}).")
-
-        async def spawn(idx: int):
+        # ---- Phase 3: Neuronal Mitosis (adaptive) ------------------------- #
+        async def spawn(idx: int, elicit: bool = False):
             name, _flag, hexlabel, sysmsg, temp = ROLES[idx]
+            # Stagger premium-model fan-out slightly to avoid burst rate-limits, and
+            # give reasoning models enough budget to think AND answer (else content
+            # can come back empty when reasoning tokens exhaust a low max_tokens).
+            if idx:
+                await asyncio.sleep(0.25 * idx)
             comp = await provider.complete(
                 prompt=f"Context (pruned):\n{pruned_ctx}\n\nTask:\n{task}",
-                model=model, system=sysmsg, max_tokens=700, temperature=temp)
+                model=model, system=sysmsg + (_CONF_INSTR if elicit else ""),
+                max_tokens=3072, temperature=temp)
             if comp.error:
-                rec.log("Neuronal Mitosis", f"Sub-agent {idx+1}/{k} {name} ({hexlabel}) ERROR: {comp.error}")
+                rec.log("Neuronal Mitosis", f"Sub-agent {idx+1} {name} ({hexlabel}) ERROR: {comp.error}")
             else:
-                rec.log("Neuronal Mitosis", f"Sub-agent {idx+1}/{k} {name} ({hexlabel}) converged: "
+                rec.log("Neuronal Mitosis", f"Sub-agent {idx+1} {name} ({hexlabel}) converged: "
                                             f"in {comp.in_tokens} → out {comp.out_tokens} tok, "
                                             f"rtt {comp.rtt_ms:.0f}ms.")
             return name, comp
 
-        results = await asyncio.gather(*(spawn(i) for i in range(k)))
-        hyps = [c for _n, c in results]
-        viable = [c for c in hyps if not c.error and c.text]
-        rec.log("Neuronal Mitosis", f"{len(viable)}/{k} hypotheses viable after mitosis.")
+        confidence: Optional[int] = None
+        if adaptive:
+            rec.log("Neuronal Mitosis", f"Scout probe ({model}) — assessing difficulty before fan-out.")
+            _n, scout = await spawn(0, elicit=True)
+            confidence = _parse_confidence(scout.text)
+            scout.text = _strip_confidence(scout.text)  # keep the answer clean of the tag
+            rec.log("Neuronal Mitosis", f"Scout confidence: "
+                                        f"{confidence if confidence is not None else 'n/a'} "
+                                        f"(threshold {confidence_threshold}).")
+            if (scout.text and not scout.error and confidence is not None
+                    and confidence >= confidence_threshold):
+                escalated = False
+                results = [("Architect", scout)]
+                hyps = [scout]
+                viable = [scout]
+                final = scout
+                rec.log("Neuronal Mitosis", f"High confidence → DIRECT answer; mitosis skipped "
+                                            f"(saved ~{k - 1} sub-agent calls + synthesis).")
+            else:
+                escalated = True
+                rec.log("Neuronal Mitosis", f"Low/uncertain confidence → escalating to {k}-way mitosis.")
+                rest = await asyncio.gather(*(spawn(i) for i in range(1, k)))
+                results = [("Architect", scout)] + list(rest)
+                hyps = [c for _n, c in results]
+                viable = [c for c in hyps if not c.error and c.text]
+                rec.log("Neuronal Mitosis", f"{len(viable)}/{k} hypotheses viable after mitosis.")
+                final = await _coordinate(provider, task, viable, model, rec)
+        else:
+            escalated = True
+            rec.log("Neuronal Mitosis", f"Node duplicated into {k} parallel sub-agents ({model}).")
+            results = await asyncio.gather(*(spawn(i) for i in range(k)))
+            hyps = [c for _n, c in results]
+            viable = [c for c in hyps if not c.error and c.text]
+            rec.log("Neuronal Mitosis", f"{len(viable)}/{k} hypotheses viable after mitosis.")
+            final = await _coordinate(provider, task, viable, model, rec)
 
-        # ---- Convergence -------------------------------------------------- #
-        final = await _coordinate(provider, task, viable, model, rec)
         seconds = (time.perf_counter_ns() - t_start) / 1e9
 
-        in_tok = sum(c.in_tokens for c in hyps) + final.in_tokens
-        out_tok = sum(c.out_tokens for c in hyps) + final.out_tokens
-        cost = round(sum(c.cost_usd for c in hyps) + final.cost_usd, 6)
-        calls = k + (1 if len(viable) > 1 else 0)
+        # Count only the DISTINCT model calls actually made (scout, sub-agents, synthesis).
+        used = list(hyps)
+        if all(final is not c for c in used):
+            used.append(final)
+        in_tok = sum(c.in_tokens for c in used)
+        out_tok = sum(c.out_tokens for c in used)
+        cost = round(sum(c.cost_usd for c in used), 6)
+        calls = len(used)
 
         return {
             "answer": final.text,
@@ -234,7 +292,8 @@ async def evolve(task: str, *, model: str = "openai/gpt-4o", mitosis: int = 3,
                 "apoptosis": {"backend": pr.backend, "context_source": ctx_source,
                               "tokens_before": before, "tokens_after": after,
                               "reduction": round(reduction, 4), "purged_items": purged},
-                "mitosis": {"width": k, "viable": len(viable),
+                "mitosis": {"width": k, "adaptive": adaptive, "escalated": escalated,
+                            "confidence": confidence, "viable": len(viable),
                             "roles": [n for n, _ in results]},
                 "usage": {"in_tokens": in_tok, "out_tokens": out_tok,
                           "cost_usd": cost, "calls": calls},
