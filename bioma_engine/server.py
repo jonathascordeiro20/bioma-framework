@@ -77,12 +77,15 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Allow the local file:// test terminal (bioma_chat_test.html) — which sends an
-# ``Origin: null`` header — plus any localhost tool to call the API from a browser.
-# No credentials are used, so a wildcard origin is safe here.
+# CORS: dev defaults to "*" (so the local file:// test terminal, which sends an
+# ``Origin: null`` header, works out of the box).  In PRODUCTION set
+# ``BIOMA_ALLOWED_ORIGINS`` to a comma-separated allow-list of your real front-end
+# origin(s), e.g. ``BIOMA_ALLOWED_ORIGINS=https://app.example.com``.
+_origins_env = os.environ.get("BIOMA_ALLOWED_ORIGINS", "*").strip()
+_allowed_origins = ["*"] if _origins_env == "*" else [o.strip() for o in _origins_env.split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_allowed_origins,
     allow_methods=["*"],
     allow_headers=["*"],
 )

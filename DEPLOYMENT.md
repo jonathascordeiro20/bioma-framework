@@ -67,29 +67,19 @@ gunicorn bioma_engine.server:app \
 > Set `OMP_NUM_THREADS=1` and `KMP_DUPLICATE_LIB_OK=TRUE` in the environment.
 
 ## 4 · Container image
-```dockerfile
-# Dockerfile (multi-stage: build the Rust kernel, ship a slim runtime)
-FROM rust:1-slim AS kernel
-WORKDIR /app
-RUN apt-get update && apt-get install -y python3 python3-pip python3-dev && rm -rf /var/lib/apt/lists/*
-COPY bioma_kernel/ ./bioma_kernel/
-RUN pip3 install --break-system-packages maturin && cd bioma_kernel && pip3 wheel . -w /wheels
-
-FROM python:3.12-slim AS runtime
-ENV OMP_NUM_THREADS=1 KMP_DUPLICATE_LIB_OK=TRUE PYTHONUNBUFFERED=1
-WORKDIR /app
-COPY --from=kernel /wheels /wheels
-COPY . .
-RUN pip install --no-cache-dir /wheels/*.whl \
- && pip install --no-cache-dir -r bioma_engine/requirements.txt httpx "openai>=1" python-dotenv gunicorn
-EXPOSE 8000
-# OPENROUTER_API_KEY comes from the orchestrator, injected at runtime — never baked in.
-CMD ["gunicorn","bioma_engine.server:app","-k","uvicorn.workers.UvicornWorker","-w","4","-b","0.0.0.0:8000","--timeout","120"]
-```
+A production [`Dockerfile`](Dockerfile) ships at the repo root — multi-stage
+(build the Rust kernel wheel, then a slim `python:3.12-slim` runtime with a
+`HEALTHCHECK` and the `gunicorn` entrypoint). Both stages pin Python 3.12 so the
+compiled wheel's ABI matches.
 ```bash
 docker build -t bioma:latest .
-docker run -p 8000:8000 --env OPENROUTER_API_KEY="$OPENROUTER_API_KEY" bioma:latest
+docker run -p 8000:8000 \
+  -e OPENROUTER_API_KEY="$OPENROUTER_API_KEY" \
+  -e BIOMA_ALLOWED_ORIGINS="https://app.example.com" \
+  bioma:latest
 ```
+Secrets are injected at runtime (`-e` from your secrets manager) — never baked
+into the image.
 
 ## 5 · Edge: HTTPS + CORS
 - Terminate TLS at a reverse proxy (nginx/Caddy/ALB) → `proxy_pass` to `:8000`.
