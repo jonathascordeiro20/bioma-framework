@@ -66,9 +66,9 @@ tests/           end-to-end efficiency validation
 FINDINGS.md      ground-truth evaluation (proven / refuted), reproducible
 ```
 
-> Legacy layers (`bioma_engine/`, `bioma_orchestrator/`, `bioma_kernel/`) predate the
-> lean consolidation and remain for reproducibility of `FINDINGS.md`; they are being
-> superseded by `bioma_micro` + `bioma`.
+> Legacy layers (`bioma_orchestrator/`, `bioma_kernel/`) remain only to reproduce
+> `FINDINGS.md` (the eval scripts + the resilience load-test). The torch/mitosis
+> engine has been removed; `bioma_micro` + `bioma` are the product.
 
 ## License
 

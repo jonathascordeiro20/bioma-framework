@@ -1,5 +1,11 @@
 # B.I.O.M.A. — Production Deployment Runbook
 
+> ⚠️ **Superseded.** Production now ships the **lean Micro-Kernel** — see
+> [`deploy/Dockerfile.lean`](deploy/Dockerfile.lean),
+> [`.github/workflows/build-push-lean.yml`](.github/workflows/build-push-lean.yml) and
+> the `bioma.server` API (`GET /health`, `POST /v1/dispatch`). The torch/`bioma_engine`
+> path below is retained only as historical reference; `bioma_engine` has been removed.
+
 A practical, staged guide to take B.I.O.M.A. from repo → production. Two shippable
 surfaces:
 
