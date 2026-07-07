@@ -1,76 +1,74 @@
 # B.I.O.M.A.
 
-**Biologically Inspired Orchestration of Mutating Agents** — a sovereign AI
-runtime that orchestrates LLMs like a living organism (mitosis, homeostasis,
-apoptosis, hormonal signalling), with a microsecond Rust kernel and dollar-
-denominated ROI.
+**A lean efficiency & resilience micro-kernel for LLM infrastructure.**
 
-> Sovereign · Evolutionary · Verified. Proven in microseconds and dollars — see
-> [`TECHNICAL_DOSSIER.md`](TECHNICAL_DOSSIER.md).
+B.I.O.M.A. does not try to make an LLM "smarter" at everyday text. It makes AI
+*processing* viable, sustainable, and resilient: a lock-free Rust hormonal bus and
+an autonomous **context-apoptosis** filter that dehydrates wasted context before it
+ever reaches the API — cutting input tokens (and cost) on every call.
 
-## Architecture — five layers, each compiled & tested
+> Every claim below is measured, reproducible, and audited in
+> [`FINDINGS.md`](FINDINGS.md) — including what we tested and **refuted**.
 
-| Layer | Module | What it does |
+## Proven results (ground truth)
+
+| Capability | Result | Source |
 |---|---|---|
-| **L0 · Kernel** | [`bioma_kernel`](bioma_kernel/) (Rust + PyO3) | Lock-free hormonal bus (µs) + memory apoptosis; stress-proven (2.1M signals/s). |
-| **L1 · Engine** | [`bioma_engine`](bioma_engine/) | Sovereign, offline neural-organism core — mitosis / homeostasis / apoptosis. **M8-certified**, 78 tests. |
-| **L2 · Orchestrator** | [`bioma_orchestrator`](bioma_orchestrator/) | Online multi-LLM routing (Thompson bandit) + verification + context apoptosis. |
-| **L3 · Nervous system** | `bioma_kernel/nervous_system_*` | Live WebSocket telemetry dashboard. |
-| **L4 · Value loop** | `ContextPruner` → `handle()` | Apoptosis trims context before every call → measured token/cost savings. |
+| **Context apoptosis** | **−80% input tokens** (universal); up to **−97%** on long, noisy sessions | `tests/test_enxuto_efficiency.py` |
+| **Hormonal bus — throughput** | **~2M signals/s** | `bioma_kernel_loadtest.py` |
+| **Hormonal bus — latency** | **~5μs mean, bounded under 10× load** (p99 ≤ 27μs) | `bioma_kernel_loadtest.py` |
+| Kernel apoptosis latency | **~1.6μs mean / 4μs peak** per round | `tests/test_enxuto_efficiency.py` |
 
-## Proven results (measured)
+**What we refuted (honestly):** multi-LLM *mitosis + synthesis* does **not** improve
+answer quality or security remediation — neutral on frontier models (ceiling),
+harmful on weaker ones (synthesis corrupts correct answers), across three
+independent ground-truth experiments. It is **not** part of the product. Full
+evidence in [`FINDINGS.md`](FINDINGS.md).
 
-| Capability | Result |
+## Lean topology
+
+| Component | What it is |
 |---|---|
-| Neuronal mitosis (E2E) | **5.3× faster** · identical accuracy to ground truth |
-| Hormonal bus | **2.1M signals/s** @ microsecond latency |
-| Context apoptosis | **−39.6% input tokens** · ~$3.7k / 1M requests |
-| Orchestration | **+99.8% coverage** vs monolithic |
-| Sovereign core | **M8 ACCEPTED** · FULLY AUTONOMOUS · 89 tests green |
-
-Full provenance (measured vs calculated) in [`TECHNICAL_DOSSIER.md`](TECHNICAL_DOSSIER.md).
+| [`bioma_micro/`](bioma_micro/) (Rust + PyO3) | The micro-kernel: `hormonal_bus.rs` (lock-free signal injection) + `context_apoptosis.rs` (history dehydration). Exposes strictly signal injection + the apoptosis filter. |
+| [`bioma/`](bioma/) (Python) | `LeanOpenRouterClient` — resilient async OpenRouter dispatch that routes every payload through the Rust apoptosis filter first; exponential backoff on 429/5xx. |
+| [`tests/`](tests/) | `test_enxuto_efficiency.py` — long-session end-to-end validation (kernel μs + % tokens saved). |
 
 ## Quickstart
 
 ```bash
-# Python deps (CPU torch, fastapi, httpx, openai, python-dotenv, …)
-python -m pip install -r requirements.txt      # or: pip install -e ./bioma_engine
-
-# Rust kernel (compiles the PyO3 extension)
+# 1) Build & install the Rust micro-kernel (PyO3 extension)
 python -m pip install maturin
-cd bioma_kernel && python -m pip install . && cd ..
+cd bioma_micro && maturin build --release && \
+  pip install --force-reinstall target/wheels/bioma_micro-*.whl && cd ..
 
-# Run the test suites
-python -m pytest bioma_engine/tests bioma_orchestrator/tests -q
+# 2) Point at OpenRouter (key in .env — never commit it)
+echo "OPENROUTER_API_KEY=sk-or-..." > .env
 
-# Regenerate the consolidated dossier
-python build_dossier.py
+# 3) Validate the lean pipeline over a long session (real dispatch + real kernel)
+python tests/test_enxuto_efficiency.py --rounds 16
 ```
 
-### Online multi-model benchmark (OpenRouter)
-
-```bash
-cp .env.example .env          # then paste your OpenRouter key INTO .env (never .env.example)
-python bioma_vs_market_benchmark.py --check     # preflight
-python bioma_vs_market_benchmark.py             # A/B sweep across the 4 models
-```
+Every script also runs offline in a clearly-labelled **mock/kernel-only** mode
+without a key — the apoptosis metrics (μs latency, % saved) are always real.
 
 ## Security
 
-- **Never commit secrets.** `.env` is git-ignored; `.env.example` is the template
-  (placeholder only). Keys live in `.env` locally, and in your platform's secrets
-  manager in production — never in the repo.
-- Get/rotate your OpenRouter key at <https://openrouter.ai/keys>.
+- **Never commit secrets.** `.env` is git-ignored; keys live in `.env` locally and
+  in your platform's secrets manager in production — never in the repo.
+- Rotate your OpenRouter key at <https://openrouter.ai/keys>.
 
 ## Repository layout
 
 ```
-bioma_engine/         sovereign core (10-phase plan, M8 certificate, tests)
-bioma_orchestrator/   online LLM orchestrator + context apoptosis + OpenRouter
-bioma_kernel/         Rust/PyO3 kernel (bus, apoptosis, stress, mitosis, dashboard)
-build_dossier.py      consolidates every benchmark → TECHNICAL_DOSSIER.md/.json
-bioma_vs_market_benchmark.py   Traditional (linear) vs B.I.O.M.A. (organic) A/B
+bioma_micro/     Rust/PyO3 micro-kernel — hormonal bus + context apoptosis (the lean core)
+bioma/           Python abstraction — resilient OpenRouter client with kernel apoptosis
+tests/           end-to-end efficiency validation
+FINDINGS.md      ground-truth evaluation (proven / refuted), reproducible
 ```
+
+> Legacy layers (`bioma_engine/`, `bioma_orchestrator/`, `bioma_kernel/`) predate the
+> lean consolidation and remain for reproducibility of `FINDINGS.md`; they are being
+> superseded by `bioma_micro` + `bioma`.
 
 ## License
 

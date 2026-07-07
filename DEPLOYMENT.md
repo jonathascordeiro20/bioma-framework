@@ -110,5 +110,5 @@ gh workflow run ci.yml        # or push to main
 - [ ] `gunicorn -w N` sized to cores; replicas behind a LB.
 - [ ] `/health` wired to the orchestrator's liveness probe.
 - [ ] OpenRouter spend limit + alerts configured.
-- [ ] `python -m pytest` green in CI; `python build_dossier.py` archived as the
-      release evidence.
+- [ ] `python -m pytest` green in CI; `tests/test_enxuto_efficiency.py` run and
+      `FINDINGS.md` archived as the release evidence.
