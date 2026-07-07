@@ -1,0 +1,29 @@
+[package]
+name = "bioma_kernel"
+version = "0.1.0"
+edition = "2021"
+description = "B.I.O.M.A. Rust kernel — microsecond hormonal bus + memory apoptosis (PyO3)."
+license = "MIT"
+
+[lib]
+name = "bioma_kernel"
+# cdylib → a native Python extension module loadable by CPython.
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.22", features = ["extension-module"] }
+crossbeam-channel = "0.5"
+# Lightweight green-thread runtime for the 1k–10k concurrent micro-agents.
+tokio = { version = "1", features = ["rt-multi-thread", "time"] }
+# CPU pinning: isolate the telemetry collector on its own core so monitoring
+# never steals cycles from the worker cores (keeps the benchmark honest).
+core_affinity = "0.8"
+
+# Aggressive optimisation for the hot path — inline everything, fuse codegen units.
+# (No panic="abort": PyO3 converts Rust panics into Python exceptions at the FFI
+#  boundary, which requires unwinding.)
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true

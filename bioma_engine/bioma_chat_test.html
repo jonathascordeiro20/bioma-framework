@@ -1,0 +1,875 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>B.I.O.M.A. — Evolutionary Communication Test Terminal</title>
+
+<style>
+  /* ===================================================================== *
+   *  B.I.O.M.A. chat test terminal — single file, zero dependencies.
+   *  Palette: deep cool-charcoal neutrals · Cyber Blue #007acc ·
+   *  Bio-Green #4af626 · Crimson #e5484d (errors / threshold breach only).
+   *  Semantic color: green = life/growth · blue = system/hardware/pruning ·
+   *  crimson = death signal / error. Glow is applied to accents only.
+   * ===================================================================== */
+  :root {
+    --page-bg:   #090d0e;
+    --panel-bg:  #0f1413;
+    --well-bg:   #0b1113;
+    --raised:    #141b1d;
+    --border:    #26333a;
+    --border-dim:#1a2427;
+    --text:      #e8eeec;
+    --text-dim:  #869399;   /* ≥4.5:1 on the deep-charcoal bg (WCAG AA) */
+    --unit:      #8a99a0;   /* unit tags / footline keys — legible, not decorative */
+    --seg-off:   rgba(255,255,255,.05);
+
+    --cyber:     #007acc;
+    --cyber-lit: #29a3ef;
+    --bio:       #4af626;
+    --bio-dim:   #2f7d1c;
+    --crimson:   #e5484d;
+
+    --user-bg:   #1b2530;   /* slate gray, aligned right */
+    --bot-bg:    #121a1b;   /* dark charcoal, aligned left */
+
+    --mono: 'Cascadia Code','Cascadia Mono',Consolas,'Segoe UI Mono',ui-monospace,'Courier New',monospace;
+    --disp: 'Segoe UI Variable Display','Segoe UI',system-ui,-apple-system,sans-serif;
+
+    --gap: 14px;
+    --r: 3px;                /* tight radii — hardware, not rounded-lg */
+    --glow-bio: 0 0 5px rgba(74,246,38,.38);
+    --glow-cyber: 0 0 5px rgba(0,122,204,.42);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--page-bg);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* Full-page CRT phosphor overlay — atmosphere only, kept ~3% so text is crisp. */
+  body::after {
+    content: "";
+    position: fixed; inset: 0;
+    pointer-events: none;
+    z-index: 9;
+    background:
+      repeating-linear-gradient(0deg, transparent 0 2px, rgba(74,246,38,.028) 2px 3px),
+      radial-gradient(120% 90% at 50% 40%, transparent 60%, rgba(0,0,0,.45) 100%);
+  }
+
+  a { color: var(--cyber-lit); }
+
+  /* ------------------------------------------------------------------ header */
+  header.topbar {
+    display: flex; align-items: center; gap: 16px;
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, #0c1211, var(--page-bg));
+    flex: 0 0 auto;
+    z-index: 10;
+  }
+  .brand { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+  .brand h1 {
+    margin: 0; font-size: 17px; letter-spacing: .16em; font-weight: 700;
+    color: var(--bio); text-shadow: var(--glow-bio); white-space: nowrap;
+  }
+  .brand .sub {
+    color: var(--text-dim); font-size: 11px; letter-spacing: .1em;
+    text-transform: uppercase; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis;
+  }
+  .caret { display: inline-block; width: .55ch; height: 1.05em; margin-left: 1px;
+    background: var(--bio); box-shadow: var(--glow-bio); vertical-align: -0.16em;
+    animation: blink 1.05s step-end infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .conn { margin-left: auto; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; justify-content: flex-end; }
+  .status { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--text-dim); letter-spacing: .06em; }
+  .led { width: 9px; height: 9px; border-radius: 50%; background: var(--text-dim); flex: 0 0 auto; }
+  .led.ok    { background: var(--bio);     box-shadow: var(--glow-bio);   animation: pulse 2.1s ease-in-out infinite; }
+  .led.down  { background: var(--crimson); box-shadow: 0 0 5px rgba(229,72,77,.5); }
+  .led.busy  { background: var(--cyber);   box-shadow: var(--glow-cyber); animation: pulse .8s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity: .35; } }
+
+  .endpoint { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-dim); }
+  .endpoint input {
+    font-family: var(--mono); font-size: 12px; color: var(--cyber-lit);
+    background: var(--well-bg); border: 1px solid var(--border);
+    border-radius: var(--r); padding: 4px 8px; width: 210px; letter-spacing: .02em;
+  }
+  .endpoint input:focus { outline: none; border-color: var(--cyber); box-shadow: 0 0 0 3px rgba(0,122,204,.15); }
+
+  /* -------------------------------------------------------------------- main */
+  main {
+    flex: 1 1 auto; min-height: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1.55fr) minmax(340px, 1fr);
+    gap: var(--gap);
+    padding: var(--gap);
+  }
+
+  .panel {
+    position: relative;
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    min-height: 0;
+    display: flex; flex-direction: column;
+  }
+  /* L-shaped corner registration ticks — sharp terminal chrome. */
+  .panel::before, .panel::after {
+    content: ""; position: absolute; width: 9px; height: 9px; pointer-events: none;
+  }
+  .panel::before { top: -1px; left: -1px; border-top: 2px solid var(--border); border-left: 2px solid var(--border); }
+  .panel::after  { bottom: -1px; right: -1px; border-bottom: 2px solid var(--border); border-right: 2px solid var(--border); }
+
+  .panel-head {
+    flex: 0 0 auto;
+    display: flex; align-items: center; gap: 8px;
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--border-dim);
+    font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--text-dim);
+  }
+  .panel-head .dot { color: var(--cyber); }
+  .panel-head .spacer { flex: 1 1 auto; }
+
+  /* ------------------------------------------------------------- chat column */
+  .feed {
+    flex: 1 1 auto; min-height: 0; overflow-y: auto;
+    padding: 16px 14px; display: flex; flex-direction: column; gap: 14px;
+    scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+  }
+  .feed::-webkit-scrollbar { width: 9px; }
+  .feed::-webkit-scrollbar-thumb { background: var(--border); border-radius: 5px; }
+  .feed::-webkit-scrollbar-thumb:hover { background: #33454d; }
+
+  .msg { display: flex; flex-direction: column; max-width: 86%; animation: rise .18s ease-out; }
+  @keyframes rise { from { opacity: 0; transform: translateY(6px); } }
+  .msg .who { font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 4px; }
+
+  .msg.user { align-self: flex-end; align-items: flex-end; }
+  .msg.user .bubble {
+    background: var(--user-bg); border: 1px solid #2a3947; border-radius: var(--r);
+    padding: 9px 12px; color: #dfe8ef; white-space: pre-wrap; word-break: break-word;
+  }
+  .msg.user .who::before { content: "> "; color: var(--text-dim); }
+
+  .msg.bot { align-self: flex-start; align-items: flex-start; }
+  .msg.bot .who { color: var(--bio); }
+  .msg.bot .who::before { content: "bioma@core:~$ "; color: var(--bio-dim); }
+  .msg.bot .bubble {
+    background: var(--bot-bg);
+    border: 1px solid var(--border);
+    border-left: 2px solid var(--bio);
+    border-radius: var(--r);
+    padding: 10px 13px; width: 100%;
+  }
+  .msg.bot .say { color: var(--text); margin: 0 0 8px; }
+  .msg.bot .say:last-child { margin-bottom: 0; }
+  .msg.bot .meta-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
+  .tag {
+    font-size: 10.5px; letter-spacing: .04em; padding: 2px 7px; border-radius: 2px;
+    border: 1px solid var(--border); color: var(--text-dim); background: rgba(0,0,0,.2);
+  }
+  .tag.win { color: var(--bio); border-color: rgba(74,246,38,.4); }
+  .tag.gain { color: var(--cyber-lit); border-color: rgba(0,122,204,.45); }
+
+  /* code block */
+  .codewrap { position: relative; margin-top: 9px; }
+  .codewrap pre {
+    margin: 0; padding: 12px 13px; overflow-x: auto;
+    background: #070b0c; border: 1px solid var(--border-dim); border-radius: var(--r);
+    scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+  }
+  .codewrap pre code { font-family: var(--mono); font-size: 13px; color: #d6f5cc; white-space: pre; }
+  .copybtn {
+    position: absolute; top: 7px; right: 7px; font-family: var(--mono); font-size: 10.5px;
+    color: var(--text-dim); background: rgba(10,16,17,.85); border: 1px solid var(--border);
+    border-radius: 2px; padding: 2px 7px; cursor: pointer; opacity: 0; transition: opacity .15s, color .15s;
+  }
+  .codewrap:hover .copybtn { opacity: 1; }
+  .copybtn:hover { color: var(--bio); border-color: rgba(74,246,38,.4); }
+  .copybtn.done { color: var(--bio); border-color: rgba(74,246,38,.5); }
+
+  /* loader bubble */
+  .loader .base-reel {
+    display: inline-block; width: 1ch; height: 1.2em; overflow: hidden; vertical-align: -0.22em;
+    color: var(--bio); text-shadow: var(--glow-bio);
+  }
+  .loader .base-reel span { display: block; height: 1.2em; }
+  .loader .reel-inner { animation: reel 1s steps(4) infinite; }
+  @keyframes reel { to { transform: translateY(-4.8em); } }
+  .loader .dots::after { content: ""; animation: dots 1.2s steps(4) infinite; }
+  @keyframes dots { 0%{content:"";} 25%{content:".";} 50%{content:"..";} 75%{content:"...";} }
+  .vital-rail { position: relative; height: 2px; margin-top: 9px; background: var(--border-dim); overflow: hidden; border-radius: 2px; }
+  .vital-rail::before {
+    content: ""; position: absolute; top: 0; left: -30%; width: 30%; height: 100%;
+    background: linear-gradient(90deg, transparent, var(--bio), transparent);
+    box-shadow: var(--glow-bio); animation: sweep 1.15s ease-in-out infinite;
+  }
+  @keyframes sweep { to { left: 110%; } }
+
+  /* error alert */
+  .msg.error { align-self: stretch; max-width: 100%; }
+  .msg.error .bubble {
+    background: rgba(229,72,77,.08); border: 1px solid var(--crimson); border-left: 3px solid var(--crimson);
+    border-radius: var(--r); padding: 10px 13px; color: #f6c3c4;
+  }
+  .msg.error .who { color: var(--crimson); }
+  .msg.error .who::before { content: "!! "; }
+  .msg.error code { color: #ffd9da; background: rgba(0,0,0,.25); padding: 1px 5px; border-radius: 2px; }
+
+  /* -------------------------------------------------------------- composer */
+  .composer { flex: 0 0 auto; border-top: 1px solid var(--border-dim); padding: 11px 12px; }
+  .composer .row1 { display: flex; align-items: stretch; gap: 10px; }
+  .composer .promptwrap { position: relative; flex: 1 1 auto; display: flex; }
+  .composer .promptwrap::before {
+    content: "> "; position: absolute; left: 10px; top: 9px; color: var(--bio);
+    text-shadow: var(--glow-bio); pointer-events: none; font-weight: 700;
+  }
+  textarea#prompt {
+    flex: 1 1 auto; resize: none; min-height: 46px; max-height: 160px;
+    font-family: var(--mono); font-size: 14px; color: var(--text);
+    background: var(--well-bg); border: 1px solid var(--border); border-radius: var(--r);
+    padding: 9px 12px 9px 26px; line-height: 1.45;
+  }
+  textarea#prompt::placeholder { color: #45555b; }
+  textarea#prompt:focus { outline: none; border-color: var(--bio); box-shadow: 0 0 0 3px rgba(74,246,38,.12); }
+
+  button#send {
+    flex: 0 0 auto; align-self: stretch; min-width: 128px;
+    font-family: var(--mono); font-size: 13px; font-weight: 700; letter-spacing: .08em;
+    color: var(--bio); background: rgba(74,246,38,.06);
+    border: 1px solid rgba(74,246,38,.4); border-radius: var(--r); cursor: pointer;
+    padding: 0 16px; transition: background .15s, box-shadow .15s, transform .05s, color .15s, border-color .15s;
+  }
+  button#send:hover:not(:disabled) { background: rgba(74,246,38,.13); box-shadow: var(--glow-bio); }
+  button#send:active:not(:disabled) { transform: translateY(1px); }
+  button#send:disabled { color: var(--cyber-lit); border-color: rgba(0,122,204,.4); background: rgba(0,122,204,.06); cursor: progress; }
+
+  .composer .row2 {
+    display: flex; align-items: center; gap: 14px; margin-top: 9px;
+    font-size: 11px; color: var(--text-dim); letter-spacing: .04em; flex-wrap: wrap;
+  }
+  .modeseg { display: inline-flex; border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; }
+  .modeseg button {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .06em; color: var(--text-dim);
+    background: transparent; border: 0; padding: 4px 10px; cursor: pointer; transition: all .15s;
+  }
+  .modeseg button.active[data-mode="OFFLINE_ONLY"] { color: var(--bio); background: rgba(74,246,38,.1); text-shadow: var(--glow-bio); }
+  .modeseg button.active[data-mode="HYBRID"] { color: var(--crimson); background: rgba(229,72,77,.1); }
+  .composer .hint { margin-left: auto; }
+  .composer kbd { font-family: var(--mono); background: var(--raised); border: 1px solid var(--border); border-radius: 2px; padding: 1px 5px; color: var(--text); }
+
+  /* --------------------------------------------------------- telemetry panel */
+  .telemetry .panel-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 12px;
+    scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+  .telemetry .panel-body::-webkit-scrollbar { width: 9px; }
+  .telemetry .panel-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 5px; }
+
+  /* execution mode strip */
+  .exec-strip { display: flex; border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; }
+  .exec-strip .seg {
+    flex: 1 1 0; text-align: center; padding: 9px 6px; font-size: 12px; letter-spacing: .1em;
+    color: var(--text-dim); background: var(--well-bg); position: relative; transition: all .2s;
+  }
+  .exec-strip .seg + .seg { border-left: 1px solid var(--border); }
+  .exec-strip .seg .egg { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: currentColor; margin-right: 7px; vertical-align: middle; opacity: .35; }
+  .exec-strip .seg.on[data-seg="OFFLINE_ONLY"] { color: var(--bio); background: rgba(74,246,38,.09); text-shadow: var(--glow-bio); }
+  .exec-strip .seg.on[data-seg="HYBRID"] { color: var(--cyber-lit); background: rgba(0,122,204,.1); }
+  .exec-strip .seg.on .egg { opacity: 1; box-shadow: 0 0 6px currentColor; animation: pulse 2.1s ease-in-out infinite; }
+
+  /* vital sign trace */
+  .vital { border: 1px solid var(--border); border-radius: var(--r); background: var(--well-bg); padding: 6px 8px; }
+  .vital .vlabel { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 2px; }
+  .vital canvas { display: block; width: 100%; height: 46px; }
+
+  /* recessed instrument wells (2x2) */
+  .wells { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .well {
+    position: relative; grid-column: span 1;
+    background: var(--well-bg); border: 1px solid var(--border); border-radius: var(--r);
+    box-shadow: inset 0 1px 3px rgba(0,0,0,.6), inset 0 0 0 1px rgba(255,255,255,.015);
+    padding: 11px 12px 12px; min-width: 0;
+  }
+  .well.span2 { grid-column: 1 / -1; }
+  .well .wlabel { font-size: 10px; letter-spacing: .13em; text-transform: uppercase; color: var(--text-dim); display: flex; justify-content: space-between; }
+  .well .unit { color: var(--unit); }
+  .readout { position: relative; margin-top: 6px; font-variant-numeric: tabular-nums; font-weight: 700; }
+  .readout .ghost {
+    position: absolute; inset: 0; color: var(--seg-off); z-index: 0; -webkit-user-select: none; user-select: none; pointer-events: none;
+    font-size: 30px; line-height: 1;
+  }
+  .readout .live { position: relative; z-index: 1; font-size: 30px; line-height: 1; display: inline-block; }
+  .well.lineages .live { color: var(--bio); text-shadow: var(--glow-bio); }
+  .well.apoptosis .live { color: var(--cyber-lit); text-shadow: var(--glow-cyber); }
+  .well.latency .live { color: var(--bio); text-shadow: var(--glow-bio); }
+  .well.memory .live { color: var(--cyber-lit); text-shadow: var(--glow-cyber); }
+  .readout .delta { font-size: 12px; font-weight: 400; margin-left: 8px; vertical-align: middle; opacity: 0; transition: opacity .2s; }
+  .well.lineages .delta { color: var(--bio); }
+  .well.apoptosis .delta { color: var(--cyber-lit); }
+
+  .microbar { height: 4px; margin-top: 9px; background: var(--border-dim); border-radius: 2px; overflow: hidden; }
+  .microbar > i { display: block; height: 100%; width: 0%; background: var(--bio); box-shadow: var(--glow-bio); transition: width .45s ease, background .3s; }
+  .well.memory .microbar > i { background: var(--cyber); box-shadow: var(--glow-cyber); }
+
+  /* threshold breach → crimson (single flash, no looping blink) */
+  .well.breach .live { color: var(--crimson) !important; text-shadow: 0 0 6px rgba(229,72,77,.5) !important; }
+  .well.breach .microbar > i { background: var(--crimson) !important; box-shadow: 0 0 6px rgba(229,72,77,.5) !important; }
+
+  /* reseat flash on value update */
+  .well.tick { animation: reseat .42s ease-out; }
+  @keyframes reseat {
+    0% { filter: brightness(1); }
+    30% { filter: brightness(1.7); }
+    100% { filter: brightness(1); }
+  }
+
+  .telemetry .footline {
+    border-top: 1px solid var(--border-dim); padding-top: 10px; margin-top: 2px;
+    font-size: 11px; color: var(--text-dim); display: grid; grid-template-columns: auto 1fr; gap: 3px 10px;
+  }
+  .telemetry .footline b { color: var(--text); font-weight: 400; }
+  .telemetry .footline .k { color: var(--unit); letter-spacing: .05em; }
+
+  /* ------------------------------------------------------------- responsive */
+  @media (max-width: 980px) {
+    body { overflow: auto; }
+    main { grid-template-columns: 1fr; }
+    .telemetry { order: -1; }
+    .feed { max-height: 52vh; }
+    .conn { width: 100%; }
+  }
+  @media (max-width: 520px) {
+    .wells { grid-template-columns: 1fr; }
+    .endpoint input { width: 150px; }
+    button#send { min-width: 96px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
+    body::after { background: radial-gradient(120% 90% at 50% 40%, transparent 60%, rgba(0,0,0,.45) 100%); }
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <h1>B.I.O.M.A.</h1>
+    <span class="sub">Evolutionary Communication Test Terminal<span class="caret"></span></span>
+  </div>
+  <div class="conn">
+    <label class="endpoint">API
+      <input id="endpoint" type="text" value="http://127.0.0.1:8000" spellcheck="false"
+             aria-label="B.I.O.M.A. server base URL" />
+    </label>
+    <span class="status"><span id="led" class="led" aria-hidden="true"></span><span id="statusText">checking…</span></span>
+  </div>
+</header>
+
+<main>
+  <!-- ============================ LEFT: chat ============================ -->
+  <section class="panel chat" aria-label="Evolutionary chat">
+    <div class="panel-head"><span class="dot">◆</span> EVOLUTIONARY&nbsp;CHAT <span class="spacer"></span><span id="turnCount">0 turns</span></div>
+
+    <div id="feed" class="feed" aria-live="polite"></div>
+
+    <form id="composer" class="composer" autocomplete="off">
+      <div class="row1">
+        <div class="promptwrap">
+          <textarea id="prompt" rows="1" placeholder="Describe the software architecture or routine to evolve…"
+                    aria-label="Query prompt"></textarea>
+        </div>
+        <button id="send" type="submit">SEND QUERY</button>
+      </div>
+      <div class="row2">
+        <span>MODE</span>
+        <span class="modeseg" role="group" aria-label="Execution mode">
+          <button type="button" data-mode="OFFLINE_ONLY" class="active">OFFLINE_ONLY</button>
+          <button type="button" data-mode="HYBRID">HYBRID</button>
+        </span>
+        <span class="hint"><kbd>Enter</kbd> send · <kbd>Shift</kbd>+<kbd>Enter</kbd> newline</span>
+      </div>
+    </form>
+  </section>
+
+  <!-- ====================== RIGHT: telemetry panel ====================== -->
+  <aside class="panel telemetry" aria-label="Homeostatic telemetry">
+    <div class="panel-head"><span class="dot">▮</span> HOMEOSTATIC&nbsp;TELEMETRY <span class="spacer"></span><span id="lastUpd">idle</span></div>
+    <div class="panel-body">
+
+      <!-- 1 · execution mode -->
+      <div class="exec-strip" id="execStrip" role="status" aria-label="Execution mode">
+        <div class="seg on" data-seg="OFFLINE_ONLY"><span class="egg"></span>OFFLINE_ONLY</div>
+        <div class="seg" data-seg="HYBRID"><span class="egg"></span>HYBRID</div>
+      </div>
+
+      <!-- vital-sign trace -->
+      <div class="vital">
+        <div class="vlabel">Organism vital-sign trace</div>
+        <canvas id="vital" width="600" height="92"></canvas>
+      </div>
+
+      <!-- 2..5 · gauges -->
+      <div class="wells">
+        <div class="well lineages" id="w_lineages">
+          <div class="wlabel"><span>Mutated Lineages</span><span class="unit">count</span></div>
+          <div class="readout"><span class="ghost">888</span><span class="live" data-v="0">0</span><span class="delta"></span></div>
+        </div>
+
+        <div class="well apoptosis" id="w_apoptosis">
+          <div class="wlabel"><span>Apoptosis Pruning</span><span class="unit">count</span></div>
+          <div class="readout"><span class="ghost">888</span><span class="live" data-v="0">0</span><span class="delta"></span></div>
+        </div>
+
+        <div class="well latency" id="w_latency">
+          <div class="wlabel"><span>Hardware Latency</span><span class="unit">ms</span></div>
+          <div class="readout"><span class="ghost">8888</span><span class="live" data-v="0">0</span></div>
+          <div class="microbar"><i></i></div>
+        </div>
+
+        <div class="well memory" id="w_memory">
+          <div class="wlabel"><span>Memory Footprint</span><span class="unit">RSS Δ MB</span></div>
+          <div class="readout"><span class="ghost">88.8</span><span class="live" data-v="0">0.0</span></div>
+          <div class="microbar"><i></i></div>
+        </div>
+      </div>
+
+      <div class="footline">
+        <span class="k">winning transform</span><b id="f_transform">—</b>
+        <span class="k">target</span><b id="f_target">—</b>
+        <span class="k">served from cache</span><b id="f_cached">—</b>
+        <span class="k">latency gain</span><b id="f_gain">—</b>
+      </div>
+
+    </div>
+  </aside>
+</main>
+
+<script>
+"use strict";
+(function () {
+  // ---------------------------------------------------------------- helpers
+  const $ = (sel, root) => (root || document).querySelector(sel);
+  const feed = $("#feed");
+  const promptEl = $("#prompt");
+  const sendBtn = $("#send");
+  const composer = $("#composer");
+  const endpointEl = $("#endpoint");
+  const led = $("#led");
+  const statusText = $("#statusText");
+  const turnCount = $("#turnCount");
+  const lastUpd = $("#lastUpd");
+
+  let mode = "OFFLINE_ONLY";
+  let inFlight = false;
+  let turns = 0;
+
+  // Respect the OS "reduce motion" setting for the JS-driven canvas + count-up.
+  const RM = window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)") : null;
+  const reduce = () => !!(RM && RM.matches);
+
+  const DNA_BASES = ["A", "T", "G", "C"];
+  const LAT_THRESHOLD = 2500;   // ms — beyond this the latency well breaches crimson
+  const MEM_THRESHOLD = 40;     // MB — beyond this the memory well breaches crimson
+
+  // Build an element with optional class + text (text set safely via textContent).
+  function el(tag, cls, text) {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  }
+  function scrollFeed() { feed.scrollTop = feed.scrollHeight; }
+  const baseUrl = () => endpointEl.value.trim().replace(/\/+$/, "") || "http://127.0.0.1:8000";
+
+  // ---------------------------------------------------------- chat rendering
+  function addUser(text) {
+    const m = el("div", "msg user");
+    m.appendChild(el("div", "who", "You"));
+    m.appendChild(el("div", "bubble", text));          // textContent → safe
+    feed.appendChild(m);
+    scrollFeed();
+  }
+
+  function addLoader() {
+    const m = el("div", "msg bot loader");
+    m.appendChild(el("div", "who", "B.I.O.M.A."));
+    const bubble = el("div", "bubble");
+    const line = el("p", "say");
+    line.appendChild(document.createTextNode("Organism is mutating logic"));
+    const dots = el("span", "dots"); line.appendChild(dots);
+    line.appendChild(document.createTextNode(" ["));
+    // DNA base reel (A→T→G→C rolling) implying nucleotide mutation.
+    const reel = el("span", "base-reel");
+    const inner = el("span", "reel-inner");
+    DNA_BASES.concat(DNA_BASES[0]).forEach(b => inner.appendChild(el("span", null, b)));
+    reel.appendChild(inner); line.appendChild(reel);
+    line.appendChild(document.createTextNode("]"));
+    bubble.appendChild(line);
+    bubble.appendChild(el("div", "vital-rail"));
+    m.appendChild(bubble);
+    feed.appendChild(m);
+    scrollFeed();
+    return m;
+  }
+
+  function addError(title, detail) {
+    const m = el("div", "msg error");
+    m.appendChild(el("div", "who", "APOPTOSIS / LINK FAILURE"));
+    const bubble = el("div", "bubble");
+    bubble.appendChild(el("p", "say", title));
+    if (detail) {
+      const p = el("p", "say");
+      const code = el("code", null, detail);
+      p.appendChild(code);
+      bubble.appendChild(p);
+    }
+    m.appendChild(bubble);
+    feed.appendChild(m);
+    scrollFeed();
+  }
+
+  // Render the organism's spoken reply (Portuguese, "alive" voice) + code block.
+  function addReply(data) {
+    const m = el("div", "msg bot");
+    m.appendChild(el("div", "who", "B.I.O.M.A."));
+    const bubble = el("div", "bubble");
+
+    const ms = Math.round((Number(data.latency_s) || 0) * 1000);
+    const gain = Number(data.latency_gain_pct) || 0;
+    const say = el("p", "say");
+    if (data.improved) {
+      say.textContent =
+        `Mutei ${data.lineages_mutated} linhagens e podei ${data.apoptosis_cleans} variações inviáveis por apoptose. ` +
+        `A linhagem vencedora convergiu em ${ms} ms com ganho de latência de ${gain.toFixed(0)}%.`;
+    } else {
+      say.textContent =
+        `Explorei ${data.lineages_mutated} linhagens (apoptose: ${data.apoptosis_cleans}); ` +
+        `nenhuma superou o organismo original, então preservei sua forma. Convergência em ${ms} ms.`;
+    }
+    bubble.appendChild(say);
+
+    // code
+    const wrap = el("div", "codewrap");
+    const pre = el("pre");
+    const code = el("code", null, String(data.code || "").replace(/\s+$/, ""));  // textContent → escaped
+    pre.appendChild(code);
+    const copy = el("button", "copybtn", "copy");
+    copy.type = "button";
+    copy.addEventListener("click", () => {
+      const txt = code.textContent;
+      const done = () => { copy.textContent = "copied"; copy.classList.add("done");
+        setTimeout(() => { copy.textContent = "copy"; copy.classList.remove("done"); }, 1400); };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(txt).then(done, () => fallbackCopy(txt, done));
+      } else { fallbackCopy(txt, done); }
+    });
+    wrap.appendChild(pre);
+    wrap.appendChild(copy);
+    bubble.appendChild(wrap);
+
+    // meta tags
+    const tags = el("div", "meta-tags");
+    if (data.winning_transform) tags.appendChild(el("span", "tag win", data.winning_transform));
+    tags.appendChild(el("span", "tag gain", `+${gain.toFixed(0)}% faster`));
+    if (data.cached) tags.appendChild(el("span", "tag", "cache-hit"));
+    bubble.appendChild(tags);
+
+    m.appendChild(bubble);
+    feed.appendChild(m);
+    scrollFeed();
+  }
+
+  function fallbackCopy(text, done) {
+    const ta = el("textarea"); ta.value = text;
+    ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); done(); } catch (e) { /* ignore */ }
+    document.body.removeChild(ta);
+  }
+
+  // --------------------------------------------------------- telemetry panel
+  const wells = {
+    lineages: { root: $("#w_lineages"), live: $("#w_lineages .live"), delta: $("#w_lineages .delta"), val: 0, dec: 0 },
+    apoptosis:{ root: $("#w_apoptosis"), live: $("#w_apoptosis .live"), delta: $("#w_apoptosis .delta"), val: 0, dec: 0 },
+    latency:  { root: $("#w_latency"), live: $("#w_latency .live"), bar: $("#w_latency i"), val: 0, dec: 0 },
+    memory:   { root: $("#w_memory"), live: $("#w_memory .live"), bar: $("#w_memory i"), val: 0, dec: 1 },
+  };
+
+  function fmt(v, dec, signed) {
+    const s = (signed && v > 0) ? "+" : "";
+    return s + v.toFixed(dec);
+  }
+
+  // Odometer count-up tween (rAF, easeOutCubic) — digits roll, never hard-swap.
+  function tween(w, to, opts) {
+    opts = opts || {};
+    const from = w.val, dec = w.dec, signed = !!opts.signed;
+    to = Number(to) || 0;
+    if (!isFinite(to)) to = 0;
+    w.root.classList.remove("tick"); void w.root.offsetWidth; w.root.classList.add("tick");
+    if (reduce()) { w.live.textContent = fmt(to, dec, signed); w.val = to; return; }  // no motion → set final
+    const t0 = performance.now(), dur = 420;
+    function step(now) {
+      const p = Math.min(1, (now - t0) / dur);
+      const e = 1 - Math.pow(1 - p, 3);
+      const cur = from + (to - from) * e;
+      w.live.textContent = fmt(cur, dec, signed);
+      if (p < 1) { requestAnimationFrame(step); }
+      else { w.live.textContent = fmt(to, dec, signed); w.val = to; }
+    }
+    requestAnimationFrame(step);
+  }
+
+  function flashDelta(w, delta) {
+    if (!w.delta) return;
+    if (!delta) { w.delta.style.opacity = "0"; return; }
+    w.delta.textContent = (delta > 0 ? "+" + delta + "▲" : delta + "▼");
+    w.delta.style.opacity = "1";
+    setTimeout(() => { w.delta.style.opacity = "0"; }, 1200);
+  }
+
+  function updateTelemetry(data) {
+    lastUpd.textContent = "updated";
+    // execution mode strip
+    const active = String(data.execution_mode || "OFFLINE_ONLY");
+    document.querySelectorAll("#execStrip .seg").forEach(seg => {
+      seg.classList.toggle("on", seg.getAttribute("data-seg") === active);
+    });
+
+    // lineages / apoptosis (integers, with delta chips)
+    flashDelta(wells.lineages, Math.round((Number(data.lineages_mutated) || 0) - wells.lineages.val));
+    flashDelta(wells.apoptosis, Math.round((Number(data.apoptosis_cleans) || 0) - wells.apoptosis.val));
+    tween(wells.lineages, Number(data.lineages_mutated) || 0);
+    tween(wells.apoptosis, Number(data.apoptosis_cleans) || 0);
+
+    // latency (ms) + threshold + micro-bar
+    const ms = Math.round((Number(data.latency_s) || 0) * 1000);
+    tween(wells.latency, ms);
+    wells.latency.bar.style.width = Math.max(2, Math.min(100, (ms / LAT_THRESHOLD) * 100)) + "%";
+    wells.latency.root.classList.toggle("breach", ms >= LAT_THRESHOLD);
+
+    // memory (signed MB) + micro-bar (magnitude)
+    const mem = Number(data.rss_delta_mb) || 0;
+    tween(wells.memory, mem, { signed: true });
+    wells.memory.bar.style.width = Math.max(2, Math.min(100, (Math.abs(mem) / MEM_THRESHOLD) * 100)) + "%";
+    wells.memory.root.classList.toggle("breach", mem >= MEM_THRESHOLD);
+
+    // footline
+    $("#f_transform").textContent = data.winning_transform || "—";
+    $("#f_target").textContent = data.target || "—";
+    $("#f_cached").textContent = data.cached ? "yes" : "no";
+    $("#f_gain").textContent = (Number(data.latency_gain_pct) || 0).toFixed(0) + "%";
+  }
+
+  // Reset panels to zero (graceful degradation on failure — no frozen UI).
+  function resetTelemetry() {
+    lastUpd.textContent = "reset";
+    ["lineages", "apoptosis", "latency", "memory"].forEach(k => {
+      const w = wells[k];
+      w.val = 0;
+      w.live.textContent = fmt(0, w.dec, k === "memory");
+      w.root.classList.remove("breach", "tick");
+      if (w.bar) w.bar.style.width = "0%";
+      if (w.delta) w.delta.style.opacity = "0";
+    });
+    document.querySelectorAll("#execStrip .seg").forEach(seg =>
+      seg.classList.toggle("on", seg.getAttribute("data-seg") === "OFFLINE_ONLY"));
+    $("#f_transform").textContent = "—";
+    $("#f_target").textContent = "—";
+    $("#f_cached").textContent = "—";
+    $("#f_gain").textContent = "—";
+  }
+
+  // ------------------------------------------------------- vital-sign canvas
+  const vc = $("#vital"), vctx = vc.getContext("2d");
+  const dpr = window.devicePixelRatio || 1;
+  let vphase = 0, vBusy = false, vitalRAF = 0;
+  function sizeCanvas() {
+    const w = vc.clientWidth || 300, h = vc.clientHeight || 46;
+    vc.width = Math.round(w * dpr); vc.height = Math.round(h * dpr);
+  }
+  function gauss(p, mu, sig) { const d = (p - mu) / sig; return Math.exp(-0.5 * d * d); }
+  function beat(p) { // one heartbeat cycle p∈[0,1)
+    return gauss(p, 0.50, 0.010) * 1.0 - gauss(p, 0.46, 0.012) * 0.28
+         - gauss(p, 0.56, 0.020) * 0.42 + gauss(p, 0.20, 0.03) * 0.12
+         + gauss(p, 0.78, 0.05) * 0.20;
+  }
+  function drawVital() {
+    const W = vc.width, H = vc.height, mid = H * 0.56, amp = H * 0.42, period = W * 0.5;
+    vctx.clearRect(0, 0, W, H);
+    // faint baseline grid
+    vctx.strokeStyle = "rgba(38,51,58,0.5)"; vctx.lineWidth = 1;
+    vctx.beginPath(); vctx.moveTo(0, mid); vctx.lineTo(W, mid); vctx.stroke();
+    // trace
+    vctx.beginPath();
+    for (let x = 0; x <= W; x += 1) {
+      const u = ((x + vphase) % period) / period;
+      const y = mid - beat(u) * amp;
+      if (x === 0) vctx.moveTo(x, y); else vctx.lineTo(x, y);
+    }
+    vctx.strokeStyle = vBusy ? "#7dff54" : "#4af626";
+    vctx.lineWidth = Math.max(1.4, 1.6 * dpr);
+    vctx.shadowColor = "rgba(74,246,38,0.55)"; vctx.shadowBlur = vBusy ? 9 : 5;
+    vctx.stroke();
+    vctx.shadowBlur = 0;
+    vitalRAF = 0;
+    if (!reduce()) {                                   // draw a single static frame when motion is reduced
+      vphase += vBusy ? 3.4 * dpr : 1.3 * dpr;
+      vitalRAF = requestAnimationFrame(drawVital);
+    }
+  }
+  function ensureVital() { if (!vitalRAF) { if (vitalRAF) cancelAnimationFrame(vitalRAF); drawVital(); } }
+  if (RM && RM.addEventListener) RM.addEventListener("change", () => { if (vitalRAF) { cancelAnimationFrame(vitalRAF); vitalRAF = 0; } drawVital(); });
+
+  // ---------------------------------------------------------- network / send
+  async function checkHealth() {
+    led.className = "led"; statusText.textContent = "checking…";
+    try {
+      const r = await fetch(baseUrl() + "/health", { method: "GET" });
+      if (r.ok) { led.className = "led ok"; statusText.textContent = "core online"; }
+      else { led.className = "led down"; statusText.textContent = "core error " + r.status; }
+    } catch (e) {
+      led.className = "led down"; statusText.textContent = "core offline";
+    }
+  }
+
+  async function submitQuery(text) {
+    if (inFlight) return;
+    inFlight = true; vBusy = true;
+    sendBtn.disabled = true; sendBtn.textContent = "TX…";
+    led.className = "led busy"; statusText.textContent = "mutating…";
+    lastUpd.textContent = "…";
+
+    addUser(text);
+    turns += 1; turnCount.textContent = turns + (turns === 1 ? " turn" : " turns");
+    const loaderNode = addLoader();
+
+    let resp, data;
+    const ac = new AbortController();
+    const killer = setTimeout(() => ac.abort(), 30000);   // recover from a hung/half-open socket
+    try {
+      resp = await fetch(baseUrl() + "/v1/evolve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: text, execution_mode: mode }),
+        signal: ac.signal,
+      });
+    } catch (netErr) {
+      clearTimeout(killer);
+      loaderNode.remove();
+      const timedOut = netErr && netErr.name === "AbortError";
+      addError(
+        timedOut ? "Request timed out after 30s — the core accepted the link but never converged."
+                 : "Network link severed — the local B.I.O.M.A. core is unreachable.",
+        "fetch " + baseUrl() + "/v1/evolve → " + (netErr && netErr.message ? netErr.message : String(netErr)));
+      resetTelemetry();
+      finish("core offline", "led down");
+      return;
+    }
+    clearTimeout(killer);
+
+    // parse body (may be an error envelope)
+    try { data = await resp.json(); } catch (e) { data = null; }
+
+    if (!resp.ok) {
+      loaderNode.remove();
+      const detail = (data && data.error) ? data.error : ("HTTP " + resp.status + " " + resp.statusText);
+      addError("The core rejected this query (HTTP " + resp.status + ").", detail);
+      resetTelemetry();
+      finish("query rejected", "led down");
+      return;
+    }
+    if (!data || typeof data.code === "undefined") {
+      loaderNode.remove();
+      addError("Malformed response — no code payload in server reply.", JSON.stringify(data).slice(0, 300));
+      resetTelemetry();
+      finish("bad payload", "led down");
+      return;
+    }
+
+    // Guard the success path too: a render/DOM error must never leave the button
+    // stuck on "TX…" or the loader spinning. finish() is guaranteed to run.
+    try {
+      loaderNode.remove();
+      addReply(data);
+      updateTelemetry(data);
+      finish("core online", "led ok");
+    } catch (renderErr) {
+      loaderNode.remove();
+      addError("Render failure while displaying the reply.",
+        (renderErr && renderErr.message) ? renderErr.message : String(renderErr));
+      resetTelemetry();
+      finish("render error", "led down");
+    }
+  }
+
+  function finish(statusMsg, ledCls) {
+    inFlight = false; vBusy = false;
+    sendBtn.disabled = false; sendBtn.textContent = "SEND QUERY";
+    led.className = ledCls; statusText.textContent = statusMsg;
+    promptEl.focus();
+  }
+
+  // --------------------------------------------------------------- wire-up
+  composer.addEventListener("submit", (ev) => {
+    ev.preventDefault();                       // never reload the page
+    const text = promptEl.value.trim();
+    if (!text || inFlight) return;
+    promptEl.value = ""; autoGrow();
+    submitQuery(text).catch((e) => {                 // last-resort backstop: never freeze the UI
+      try { addError("Unexpected client error.", (e && e.message) || String(e)); resetTelemetry(); } catch (_) {}
+      finish("client error", "led down");
+    });
+  });
+
+  // Enter → send · Shift+Enter → newline
+  promptEl.addEventListener("keydown", (ev) => {
+    // !isComposing → don't submit while confirming an IME candidate (pt-BR/accents).
+    if (ev.key === "Enter" && !ev.shiftKey && !ev.isComposing) {
+      ev.preventDefault();
+      composer.requestSubmit ? composer.requestSubmit() : composer.dispatchEvent(new Event("submit", { cancelable: true }));
+    }
+  });
+
+  function autoGrow() {
+    promptEl.style.height = "auto";
+    promptEl.style.height = Math.min(160, promptEl.scrollHeight) + "px";
+  }
+  promptEl.addEventListener("input", autoGrow);
+
+  // mode toggle
+  document.querySelectorAll(".modeseg button").forEach(btn => {
+    btn.addEventListener("click", () => {
+      mode = btn.getAttribute("data-mode");
+      document.querySelectorAll(".modeseg button").forEach(b => b.classList.toggle("active", b === btn));
+    });
+  });
+
+  endpointEl.addEventListener("change", checkHealth);
+  window.addEventListener("resize", sizeCanvas);
+
+  // boot
+  sizeCanvas();
+  requestAnimationFrame(drawVital);
+  resetTelemetry();
+  checkHealth();
+  promptEl.focus();
+})();
+</script>
+</body>
+</html>

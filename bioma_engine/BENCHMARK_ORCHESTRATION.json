@@ -1,0 +1,112 @@
+{
+  "benchmark": "B.I.O.M.A. — orchestration performance & token economy",
+  "generated_utc": "2026-07-06T18:40:11Z",
+  "assumptions": {
+    "llm_baseline": "ESTIMATE — no external model called (offline/autarkic).",
+    "calls_per_task": 1,
+    "completion_estimate": "≈ emitted optimized code (conservative floor)",
+    "token_heuristic": "~4 chars/token",
+    "illustrative_price_usd_per_1M": {
+      "input": 3.0,
+      "output": 15.0
+    }
+  },
+  "honesty": [
+    "0 tokens = deterministic LOCAL optimizer, not a cheaper LLM.",
+    "100% token saving applies ONLY to the verified code-optimization niche.",
+    "LLM baseline is a conservative estimate; real agent loops cost more.",
+    "'Performance' = verified correctness + local latency + code speed-up."
+  ],
+  "token_economy": {
+    "tasks": 6,
+    "verified_improved": 6,
+    "verified_improved_rate": 1.0,
+    "mean_code_speedup_pct": 99.81,
+    "bioma_tokens_total": 0,
+    "llm_tokens_total_est": 695,
+    "token_savings_pct": 100.0,
+    "illustrative_llm_cost_usd": 0.005409,
+    "illustrative_bioma_cost_usd": 0.0,
+    "bioma_total_latency_s": 4.019,
+    "throughput_tasks_per_s": 1.493,
+    "network_bytes": 0,
+    "per_task": [
+      {
+        "task": "recursive-fibonacci",
+        "bioma_tokens": 0,
+        "bioma_latency_s": 0.5774,
+        "bioma_verified_improved": true,
+        "code_speedup_pct": 99.87,
+        "winning_transform": "ast:insert_lru_cache",
+        "llm_prompt_tokens_est": 58,
+        "llm_completion_tokens_est": 34,
+        "llm_total_tokens_est": 92
+      },
+      {
+        "task": "newton-sqrt-1800",
+        "bioma_tokens": 0,
+        "bioma_latency_s": 0.6899,
+        "bioma_verified_improved": true,
+        "code_speedup_pct": 99.8,
+        "winning_transform": "ast:perturb_int",
+        "llm_prompt_tokens_est": 72,
+        "llm_completion_tokens_est": 49,
+        "llm_total_tokens_est": 121
+      },
+      {
+        "task": "newton-sqrt-2100",
+        "bioma_tokens": 0,
+        "bioma_latency_s": 0.7082,
+        "bioma_verified_improved": true,
+        "code_speedup_pct": 99.76,
+        "winning_transform": "ast:perturb_int",
+        "llm_prompt_tokens_est": 72,
+        "llm_completion_tokens_est": 49,
+        "llm_total_tokens_est": 121
+      },
+      {
+        "task": "newton-sqrt-2400",
+        "bioma_tokens": 0,
+        "bioma_latency_s": 0.6875,
+        "bioma_verified_improved": true,
+        "code_speedup_pct": 99.79,
+        "winning_transform": "ast:insert_lru_cache",
+        "llm_prompt_tokens_est": 72,
+        "llm_completion_tokens_est": 48,
+        "llm_total_tokens_est": 120
+      },
+      {
+        "task": "newton-sqrt-2700",
+        "bioma_tokens": 0,
+        "bioma_latency_s": 0.7061,
+        "bioma_verified_improved": true,
+        "code_speedup_pct": 99.78,
+        "winning_transform": "ast:perturb_int",
+        "llm_prompt_tokens_est": 72,
+        "llm_completion_tokens_est": 49,
+        "llm_total_tokens_est": 121
+      },
+      {
+        "task": "newton-sqrt-3000",
+        "bioma_tokens": 0,
+        "bioma_latency_s": 0.6503,
+        "bioma_verified_improved": true,
+        "code_speedup_pct": 99.87,
+        "winning_transform": "ast:insert_lru_cache",
+        "llm_prompt_tokens_est": 72,
+        "llm_completion_tokens_est": 48,
+        "llm_total_tokens_est": 120
+      }
+    ]
+  },
+  "orchestration_performance": {
+    "multi_agent_coverage": 0.9923,
+    "monolithic_coverage": 0.4966,
+    "coverage_lift_absolute": 0.4957,
+    "coverage_lift_pct": 99.8,
+    "multi_agent_cascade": 0.5829,
+    "monolithic_cascade": 0.2732,
+    "cascade_lift_absolute": 0.3097,
+    "agents_spawned": null
+  }
+}

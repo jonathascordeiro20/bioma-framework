@@ -1,0 +1,519 @@
+{
+  "certificate": "B.I.O.M.A. — M8 Acceptance Certificate",
+  "plan": "PLANO_BIOMA.md · Seção 12 (Definição de Pronto)",
+  "generated_utc": "2026-07-07T14:34:40Z",
+  "elapsed_s": 43.6,
+  "params": {
+    "K": 8,
+    "K_apriori_for_d0.8": 25,
+    "soak_cycles": 15,
+    "csr_runs": 6
+  },
+  "config": {
+    "embed_dim": 128,
+    "cell_budget": 24,
+    "device": "cpu",
+    "fission_mode": "silhouette (validation)",
+    "seed": 1337
+  },
+  "pre_registered": {
+    "H1_mitosis_coverage": "Mitosis (on vs off) increases coverage_soft; |Cohen d| ≥ 0.8.",
+    "H2_bus_cascade": "With mitosis on, the bus (on vs off) increases cascade_score; |d| ≥ 0.3.",
+    "H3_interaction": "The bus's cascade benefit is larger when mitosis is on (positive interaction).",
+    "alpha": 0.05,
+    "target_power": 0.8,
+    "correction": "Holm-Bonferroni",
+    "primary_metrics": [
+      "coverage_soft",
+      "cascade_score",
+      "csr"
+    ]
+  },
+  "literature_map": {
+    "mitosis": "Mixture-of-Experts / growing networks (top-k gating, conditional compute)",
+    "bus": "Blackboard architectures / digital stigmergy / attention over a KV store",
+    "apoptosis": "Structural pruning + knowledge distillation + garbage collection",
+    "energy": "Conditional computation / ponder cost (budgeted resource accounting)",
+    "coder": "Genetic programming / program synthesis (AST transform catalog)",
+    "csr": "Reliability engineering (Wilson score interval, soak/trend leak detection)"
+  },
+  "criteria": [
+    {
+      "name": "H1 · mitose→cobertura: |d|≥0.8 ∧ significativo (Holm)",
+      "observed": {
+        "cohens_d": 1032.8375,
+        "cliffs_delta": 1.0,
+        "mean_diff": 0.4961,
+        "welch_p_holm": 0.0,
+        "ci95": [
+          0.4957,
+          0.4965
+        ]
+      },
+      "threshold": "|d| ≥ 0.8 ∧ p_holm < 0.05",
+      "pass": true,
+      "critical": true
+    },
+    {
+      "name": "H2 · barramento→cascata: |d|≥0.3 ∧ significativo (Holm)",
+      "observed": {
+        "cohens_d": 63.1836,
+        "cliffs_delta": 1.0,
+        "mean_diff": 0.2468,
+        "welch_p_holm": 0.0,
+        "ci95": [
+          0.2433,
+          0.2504
+        ]
+      },
+      "threshold": "|d| ≥ 0.3 ∧ p_holm < 0.05",
+      "pass": true,
+      "critical": true
+    },
+    {
+      "name": "H3 · interação (cascata) positiva [informativo]",
+      "observed": {
+        "interaction": 0.2468,
+        "ci95": [
+          0.2456,
+          0.2481
+        ],
+        "ci_excludes_zero": true
+      },
+      "threshold": "interação > 0 (direcional)",
+      "pass": true,
+      "critical": false
+    },
+    {
+      "name": "Matriz de confusão da mitose (precisão ∧ acurácia)",
+      "observed": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "accuracy": 1.0,
+        "tp": 3,
+        "tn": 2,
+        "fp": 0,
+        "fn": 0
+      },
+      "threshold": "precision ≥ 0.9 ∧ accuracy = 1.0",
+      "pass": true,
+      "critical": true
+    },
+    {
+      "name": "Identificabilidade: cos(P,S*) cai com γ (coordenação necessária)",
+      "observed": {
+        "cos@min_gamma": 1.0,
+        "cos@max_gamma": 0.7107,
+        "sweep": [
+          {
+            "gamma": 0.0,
+            "cos_P_vs_Sstar": 1.0
+          },
+          {
+            "gamma": 0.2,
+            "cos_P_vs_Sstar": 0.9912
+          },
+          {
+            "gamma": 0.4,
+            "cos_P_vs_Sstar": 0.9538
+          },
+          {
+            "gamma": 0.6,
+            "cos_P_vs_Sstar": 0.866
+          },
+          {
+            "gamma": 0.8,
+            "cos_P_vs_Sstar": 0.7107
+          }
+        ]
+      },
+      "threshold": "cos decresce quando γ cresce",
+      "pass": true,
+      "critical": true
+    },
+    {
+      "name": "CSR estatístico (=1.0 ∧ necrose=0; Wilson LB reportado)",
+      "observed": {
+        "csr": 1.0,
+        "wilson_lower_bound": 0.903578,
+        "N_births": 36,
+        "survivors": 36,
+        "necrosis_total": 0,
+        "runs": 6
+      },
+      "threshold": "csr = 1.0 ∧ necrose = 0 (cruzamento gc)",
+      "pass": true,
+      "critical": true
+    },
+    {
+      "name": "Soak prolongado sem vazamento (tendência ns ∧ gc=0 ∧ gauge=0)",
+      "observed": {
+        "cycles": 15,
+        "rss_slope_mb_per_cycle": -0.73069,
+        "p_value": 0.0001,
+        "gc_live": 0,
+        "gauge_after": 0,
+        "rss_first": 479.59,
+        "rss_last": 472.07
+      },
+      "threshold": "slope ≤ 0.5 MB/ciclo OU p ≥ 0.05 — E gc_live=0 E gauge=0",
+      "pass": true,
+      "critical": true
+    },
+    {
+      "name": "Race probe (read-after-write; 0 erros, manifold finito)",
+      "observed": {
+        "writers": 64,
+        "errors": 0,
+        "shape_consistent": true,
+        "manifold_finite": true,
+        "occupancy": 64
+      },
+      "threshold": "race_free = True",
+      "pass": true,
+      "critical": true
+    },
+    {
+      "name": "Reprodutibilidade lógica (mesma seed → mesma topologia/veredicto)",
+      "observed": {
+        "logically_deterministic": true,
+        "signatures": [
+          [
+            4,
+            5,
+            4,
+            1,
+            true
+          ],
+          [
+            4,
+            5,
+            4,
+            1,
+            true
+          ],
+          [
+            4,
+            5,
+            4,
+            1,
+            true
+          ]
+        ]
+      },
+      "threshold": "logically_deterministic = True",
+      "pass": true,
+      "critical": true
+    },
+    {
+      "name": "Auditoria final de invariantes (todos)",
+      "observed": {
+        "mitosis_decision_precision": 1.0,
+        "mitosis_decision_recall": 1.0,
+        "mitosis_decision_accuracy": 1.0,
+        "leak_free": true,
+        "gauge_zero": true,
+        "division_deep_copy_independent": true,
+        "energy_accounting_balanced": true,
+        "all_pass": true
+      },
+      "threshold": "all_pass = True",
+      "pass": true,
+      "critical": true
+    },
+    {
+      "name": "Autonomia (sem modelo externo/vendor; rede não requerida)",
+      "observed": {
+        "autonomous": true,
+        "no_external_model_libs": true,
+        "no_vendor_references": true,
+        "network_required_to_run_core": false
+      },
+      "threshold": "autonomous = True",
+      "pass": true,
+      "critical": true
+    }
+  ],
+  "summary": {
+    "critical_total": 10,
+    "critical_passed": 10,
+    "critical_failed": 0
+  },
+  "verdict": "ACCEPTED",
+  "details": {
+    "factorial": {
+      "K_used": 8,
+      "K_apriori_for_d0.8": 25,
+      "analysis": {
+        "tests": [
+          {
+            "hypothesis": "H1_mitosis_coverage",
+            "metric": "coverage_soft",
+            "mean_a": 0.9922,
+            "mean_b": 0.4961,
+            "mean_diff": 0.4961,
+            "cohens_d": 1032.8375,
+            "cliffs_delta": 1.0,
+            "welch_p": 6.353237111481288e-38,
+            "mwu_p": 0.0009148479102636043,
+            "ci95_diff": [
+              0.4957,
+              0.4965
+            ],
+            "welch_p_holm": 0.0,
+            "significant_after_correction": true
+          },
+          {
+            "hypothesis": "H2_bus_cascade",
+            "metric": "cascade_score",
+            "mean_a": 0.7084,
+            "mean_b": 0.4615,
+            "mean_diff": 0.2468,
+            "cohens_d": 63.1836,
+            "cliffs_delta": 1.0,
+            "welch_p": 9.65755812460993e-21,
+            "mwu_p": 0.0001554001554001554,
+            "ci95_diff": [
+              0.2433,
+              0.2504
+            ],
+            "welch_p_holm": 0.0,
+            "significant_after_correction": true
+          }
+        ],
+        "interaction_cascade": 0.2468,
+        "interaction_ci95": [
+          0.2456,
+          0.2481
+        ],
+        "interaction_significant": true,
+        "cell_means": {
+          "mit=True,bus=True": {
+            "coverage": 0.9922,
+            "cascade": 0.7084,
+            "csr": 1.0
+          },
+          "mit=True,bus=False": {
+            "coverage": 0.9922,
+            "cascade": 0.4615,
+            "csr": 1.0
+          },
+          "mit=False,bus=True": {
+            "coverage": 0.4961,
+            "cascade": 0.2774,
+            "csr": 1.0
+          },
+          "mit=False,bus=False": {
+            "coverage": 0.4961,
+            "cascade": 0.2774,
+            "csr": 1.0
+          }
+        }
+      },
+      "cell_means": {
+        "mit=True,bus=True": {
+          "coverage": 0.9922,
+          "cascade": 0.7084,
+          "csr": 1.0
+        },
+        "mit=True,bus=False": {
+          "coverage": 0.9922,
+          "cascade": 0.4615,
+          "csr": 1.0
+        },
+        "mit=False,bus=True": {
+          "coverage": 0.4961,
+          "cascade": 0.2774,
+          "csr": 1.0
+        },
+        "mit=False,bus=False": {
+          "coverage": 0.4961,
+          "cascade": 0.2774,
+          "csr": 1.0
+        }
+      }
+    },
+    "honesty": {
+      "confusion": {
+        "tp": 3,
+        "tn": 2,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "accuracy": 1.0,
+        "rows": [
+          {
+            "name": "uni-domain",
+            "expected_divide": false,
+            "predicted_divide": false,
+            "k": 1
+          },
+          {
+            "name": "adversarial-overlap",
+            "expected_divide": false,
+            "predicted_divide": false,
+            "k": 1
+          },
+          {
+            "name": "multi-K3",
+            "expected_divide": true,
+            "predicted_divide": true,
+            "k": 3
+          },
+          {
+            "name": "multi-K4-severe",
+            "expected_divide": true,
+            "predicted_divide": true,
+            "k": 4
+          },
+          {
+            "name": "multi-K6-severe",
+            "expected_divide": true,
+            "predicted_divide": true,
+            "k": 6
+          }
+        ]
+      },
+      "identifiability": [
+        {
+          "gamma": 0.0,
+          "cos_P_vs_Sstar": 1.0
+        },
+        {
+          "gamma": 0.2,
+          "cos_P_vs_Sstar": 0.9912
+        },
+        {
+          "gamma": 0.4,
+          "cos_P_vs_Sstar": 0.9538
+        },
+        {
+          "gamma": 0.6,
+          "cos_P_vs_Sstar": 0.866
+        },
+        {
+          "gamma": 0.8,
+          "cos_P_vs_Sstar": 0.7107
+        }
+      ]
+    },
+    "csr": {
+      "csr": 1.0,
+      "total_births": 36,
+      "total_survivors": 36,
+      "wilson_lower_bound": 0.903578,
+      "runs": 6,
+      "per_run": [
+        {
+          "run": 0,
+          "csr": 1.0,
+          "births": 6,
+          "necrosis": 0
+        },
+        {
+          "run": 1,
+          "csr": 1.0,
+          "births": 6,
+          "necrosis": 0
+        },
+        {
+          "run": 2,
+          "csr": 1.0,
+          "births": 6,
+          "necrosis": 0
+        },
+        {
+          "run": 3,
+          "csr": 1.0,
+          "births": 6,
+          "necrosis": 0
+        },
+        {
+          "run": 4,
+          "csr": 1.0,
+          "births": 6,
+          "necrosis": 0
+        },
+        {
+          "run": 5,
+          "csr": 1.0,
+          "births": 6,
+          "necrosis": 0
+        }
+      ]
+    },
+    "soak": {
+      "cycles": 15,
+      "rss_slope_mb_per_cycle": -0.73069,
+      "p_value": 0.0001,
+      "b_max": 0.5,
+      "gc_live_organisms": 0,
+      "gauge_after": 0,
+      "leak_free": true,
+      "rss_first": 479.59,
+      "rss_last": 472.07
+    },
+    "race": {
+      "writers": 64,
+      "errors": 0,
+      "shape_consistent": true,
+      "manifold_finite": true,
+      "occupancy": 64,
+      "race_free": true
+    },
+    "repro": {
+      "signatures": [
+        [
+          4,
+          5,
+          4,
+          1,
+          true
+        ],
+        [
+          4,
+          5,
+          4,
+          1,
+          true
+        ],
+        [
+          4,
+          5,
+          4,
+          1,
+          true
+        ]
+      ],
+      "logically_deterministic": true
+    },
+    "invariants": {
+      "mitosis_decision_precision": 1.0,
+      "mitosis_decision_recall": 1.0,
+      "mitosis_decision_accuracy": 1.0,
+      "leak_free": true,
+      "gauge_zero": true,
+      "division_deep_copy_independent": true,
+      "energy_accounting_balanced": true,
+      "all_pass": true
+    },
+    "autonomy": {
+      "autonomous": true,
+      "no_external_model_libs": true,
+      "no_vendor_references": true,
+      "model_violations": [],
+      "token_violations": [],
+      "optional_local_inference": [
+        {
+          "file": "local_inference_engine.py",
+          "lib": "llama_cpp"
+        }
+      ],
+      "scanned_files": 23,
+      "local_model": "torch.nn.Module — self-contained, deterministic",
+      "code_optimizer": "deterministic AST-transform catalog (no model)",
+      "network_required_to_run_core": false
+    }
+  }
+}

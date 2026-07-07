@@ -1,0 +1,16 @@
+# B.I.O.M.A. runtime dependencies.
+#
+# NOTE on torch: the generic `torch` requirement below resolves to a CPU or CUDA
+# wheel depending on the host/index.  For a *reproducible* CPU image the Docker
+# build installs torch explicitly from the PyTorch CPU index
+# (https://download.pytorch.org/whl/cpu); for GPU, build with
+# `--build-arg TORCH_CHANNEL=cu121`.
+torch>=2.2,<3
+fastapi>=0.110
+uvicorn[standard]>=0.29
+networkx>=3.0
+psutil>=5.9
+pydantic>=2.6
+# httpx is used by the smoke-test client (tools/smoke_client.py) and FastAPI's
+# TestClient; not required to serve, but pinned for the test surface.
+httpx>=0.27

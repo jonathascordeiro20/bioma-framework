@@ -1,0 +1,751 @@
+%==============================================================================
+%  B.I.O.M.A. — Biologically-Inspired Orchestration of Mutating Agents
+%  A dynamic neural-agent framework + a discipline for epistemic honesty
+%  in bio-inspired AI, with a pre-registered evaluation protocol.
+%
+%  Manuscript type: Systems / methods paper in the Registered-Report style.
+%  IMPORTANT (integrity): this manuscript reports NO empirical results.
+%  It specifies architecture, methodology, and a pre-registered protocol with
+%  falsifiable hypotheses. Results are stated as predictions, not findings.
+%
+%  Compiles with a standard TeX Live / Overleaf install (pdflatex, two passes).
+%  Author/affiliation below are placeholders — set them before submission.
+%==============================================================================
+\documentclass[11pt]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{microtype}
+\usepackage[hidelinks]{hyperref}
+\usepackage{caption}
+
+\newcommand{\bioma}{\textsc{B.I.O.M.A.}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\Iden}{\mathbf{I}}
+\newtheorem{definition}{Definition}
+\newtheorem{hypothesis}{Hypothesis}
+\newlist{honesty}{description}{1}
+
+\title{\bioma{}: Biologically-Inspired Orchestration of Mutating Agents\\[2pt]
+\large A Framework for Dynamic Neural-Agent Orchestration and a Discipline for
+Epistemic Honesty in Bio-Inspired AI}
+
+\author{%
+Jonathas Cordeiro\thanks{Independent Researcher. Correspondence:
+\texttt{jonathas.cordeiro2023@gmail.com}. \emph{Author name and affiliation are
+placeholders to be finalized before submission.}}\\
+Independent Researcher}
+
+\date{Preprint --- Registered-Report Stage (Stage~1: Design \& Protocol). \\
+\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+Contemporary ``autonomous agent'' frameworks are predominantly static software
+wrappers around a frozen model, and the biological vocabulary frequently
+attached to them (``organisms,'' ``evolution,'' ``self-healing'') is rarely
+grounded in a concrete mechanism, inviting overclaiming. We present \bioma{}
+(Biologically-Inspired Orchestration of Mutating Agents), a PyTorch framework in
+which agents are lightweight neural modules organized in a runtime-mutable
+directed acyclic graph (DAG) that \emph{expands} and \emph{contracts} during
+inference. \bioma{} realizes four capabilities under an explicit
+biological-to-engineering mapping: (i)~\emph{mitosis}, function-agnostic runtime
+growth by embedding-space clustering plus state-dictionary duplication, in the
+Mixture-of-Experts (MoE) / dynamic-network lineage; (ii)~\emph{apoptosis},
+structural pruning with knowledge consolidation and deterministic memory
+reclamation; (iii)~a \emph{hormonal bus}, an in-process shared-latent blackboard
+read by cosine attention with eventual-consistency semantics; and (iv)~an
+\emph{energy homeostasis} model, a non-conservative compute budget with
+uncertainty regularization. Our second and equally central contribution is
+methodological: a three-level \emph{metaphor$\rightarrow$mechanism} honesty
+taxonomy (N1 concrete / N2 analogy / N3 narrative) that disciplines every claim
+and directly targets the field's chronic overclaiming problem. We formalize
+falsifiable, operational metrics---most notably a statistically defined
+Computational Survival Rate (CSR) with Wilson lower bounds---and pre-register a
+$2\times2$ factorial ablation on a synthetic benchmark with analytic ground
+truth, together with an identifiability analysis that ties expected benefit to a
+controllable coupling parameter. \textbf{This manuscript is a Stage-1
+registered report: it contains no empirical results.} We state hypotheses,
+analysis, and stopping rules in advance, and we commit to publishing refutations.
+We conclude with an optional evolutionary auto-refactoring extension whose
+security and reproducibility boundaries we make explicit.
+\end{abstract}
+
+\medskip
+\noindent\textbf{Keywords:} dynamic neural networks, mixture-of-experts,
+multi-agent systems, artificial life, neuroevolution, blackboard architectures,
+epistemic honesty, registered reports, reproducibility.
+
+%==============================================================================
+\section{Introduction}
+%==============================================================================
+The dominant pattern for ``agentic'' AI couples a fixed neural network to an
+orchestration layer that routes text through tools and other model instances.
+The topology of computation is static: the same parameters and the same graph
+serve a trivial prompt and a multi-domain crisis alike. In parallel, a large and
+productive body of work has shown that \emph{the graph itself} can be a
+first-class, adaptive object---networks can grow while preserving function
+\cite{chen2016net2net,rusu2016progressive,yoon2018den}, route computation
+conditionally through specialized experts \cite{shazeer2017moe,fedus2022switch},
+be searched or evolved as architectures
+\cite{zoph2017nas,elsken2019nas,real2019amoeba,stanley2002neat}, and coordinate
+through shared external memory rather than message passing
+\cite{graves2016dnc,hayesroth1985blackboard}. \bioma{} asks a simple question:
+\emph{what does an agent framework look like if the population of agents and the
+communication substrate are themselves dynamical objects, created and destroyed
+in response to the cognitive load of the input?}
+
+Bio-inspiration is a double-edged sword. It is a rich source of mechanisms rooted in the artificial-life tradition
+\cite{langton1989alife}---%
+morphogenesis \cite{mordvintsev2020growing}, stigmergy \cite{dorigo1996ant},
+programmed cell death, neuroevolution
+\cite{stanley2019neuroevolution}---but it is also a well-documented vector for
+scholarship that conflates a suggestive name with a demonstrated property
+\cite{lipton2019troubling}. A system that ``undergoes mitosis'' and
+``apoptosis'' is easy to \emph{narrate} and hard to \emph{falsify} unless every
+term is pinned to a measurable operation. We therefore treat epistemic honesty
+not as a disclaimer but as a design constraint with its own artifacts and
+acceptance tests.
+
+\paragraph{Contributions.}
+\begin{enumerate}[leftmargin=1.4em,itemsep=2pt]
+\item \textbf{A framework} (\S\ref{sec:framework}) for dynamic neural-agent
+orchestration: runtime DAG mitosis, apoptosis with deterministic memory
+reclamation, an in-process hormonal bus, and a non-conservative energy
+homeostasis model---each specified with contracts and gradient-safety
+invariants.
+\item \textbf{A methodological discipline} (\S\ref{sec:honesty}): a three-level
+metaphor$\rightarrow$mechanism taxonomy that is applied uniformly and is itself
+subject to acceptance criteria (e.g., zero unqualified claims of ``life'').
+\item \textbf{A pre-registered evaluation protocol} (\S\ref{sec:protocol}):
+operational, falsifiable metrics; a $2\times2$ factorial ablation on a synthetic
+benchmark with analytic ground truth; an identifiability analysis; a statistical
+analysis plan with power, corrections, and stopping rules.
+\item \textbf{An optional evolutionary extension} (\S\ref{sec:evo}) for
+automated code refactoring, with explicit security (\texttt{subprocess}
+isolation, never \texttt{exec}) and reproducibility boundaries.
+\end{enumerate}
+
+\paragraph{Scope and honesty statement.}
+This is a Stage-1 registered report. We deliberately \emph{do not} report
+performance numbers, survival rates, or convergence curves, because none have
+been measured; the reference implementation, built on PyTorch \cite{paszke2019pytorch}, targets
+a CPU-only commodity host
+and the full protocol has not been executed. Presenting hypothetical numbers as
+findings would be data fabrication and is antithetical to the paper's thesis.
+What we commit to here---the architecture, the honesty discipline, the metrics,
+and the analysis plan---is fixed in advance so that a future Stage-2 report can
+be judged against predictions rather than post-hoc rationalizations
+\cite{chambers2013registered,pineau2021repro}.
+
+%==============================================================================
+\section{Related Work}
+%==============================================================================
+\paragraph{Dynamic and growing networks.}
+Net2Net \cite{chen2016net2net} introduced function-preserving transforms that
+widen or deepen a network while exactly preserving its function at the moment of
+expansion; progressive networks \cite{rusu2016progressive} and dynamically
+expandable networks \cite{yoon2018den} grow capacity for new tasks. HyperNetworks \cite{ha2017hypernetworks} take a
+complementary route, generating a network's weights from a smaller meta-network.
+\bioma{}
+inherits the \emph{idea} of runtime structural change but---crucially---its
+duplication is not a Net2Net identity guarantee; it is a state-dictionary
+deep-copy whose post-split behavioral equality is a \emph{copy sanity check},
+not an algebraic width-expansion identity (see \S\ref{sec:framework}).
+
+\paragraph{Conditional computation and Mixture-of-Experts.}
+Sparsely-gated MoE \cite{shazeer2017moe} and Switch Transformers
+\cite{fedus2022switch} activate input-dependent sub-networks through a learned
+router with load-balancing. \bioma{}'s ``stem cell'' is a router that decides
+\emph{whether and how much to expand}; its mitosis is MoE-style specialization
+by clustering, and we credit that lineage explicitly rather than claiming a
+novel growth primitive.
+
+\paragraph{Architecture search and neuroevolution.}
+NAS \cite{zoph2017nas,elsken2019nas} frames topology as a search problem;
+regularized evolution \cite{real2019amoeba} and NEAT
+\cite{stanley2002neat,stanley2019neuroevolution} evolve architectures and
+weights. Our optional evolutionary extension (\S\ref{sec:evo}) sits in the
+genetic-improvement tradition \cite{koza1992gp,petke2018gi,legoues2012genprog}
+applied to source code, not to network weights.
+
+\paragraph{Morphogenesis versus routed growth.}
+Growing Neural Cellular Automata \cite{mordvintsev2020growing} are the most
+honest artificial-life reference for \emph{growth}, but they are a
+\emph{distinct} paradigm: emergent self-organization from a homogeneous local
+rule. \bioma{} grows by \emph{central router decision}, not emergence; we cite
+NCA as a contrast and reserve the words ``morphogenesis'' and ``emergence'' for
+explicitly speculative future work.
+
+\paragraph{Communication substrates.}
+Rather than text-API message passing, \bioma{} uses a shared latent field read
+by attention---an in-process descendant of blackboard architectures
+\cite{hayesroth1985blackboard}, stigmergy \cite{dorigo1996ant}, and
+differentiable external memory \cite{graves2016dnc,vaswani2017attention}. We do
+\emph{not} claim ``real-time, overhead-free'' communication; we claim the
+elimination of serialization cost under eventual-consistency semantics.
+
+\paragraph{Pruning, distillation, and adaptive compute.}
+Apoptosis draws on classical pruning \cite{lecun1990obd,frankle2019lottery} and
+knowledge distillation \cite{hinton2015distill}; the energy budget is in the
+spirit of adaptive computation time / ponder cost \cite{graves2016act}. None of
+these are our invention; our contribution is their \emph{orchestrated
+integration} under one honest lifecycle.
+
+\paragraph{Reproducibility and scholarship norms.}
+We adopt community reproducibility guidance
+\cite{pineau2021repro,gundersen2018repro}, the registered-report format
+\cite{chambers2013registered}, and take seriously the critique of overclaiming
+in ML scholarship \cite{lipton2019troubling}. The CPU-only target is a
+deliberate nod to the hardware-lottery argument \cite{hooker2021hardware}: a
+method whose value depends on scarce accelerators is harder to reproduce and to
+trust.
+
+%==============================================================================
+\section{The \bioma{} Framework}
+\label{sec:framework}
+%==============================================================================
+\bioma{} is organized as a layered system around five modules:
+\texttt{organism\_core} (the passive neural unit), \texttt{mitosis\_engine} (the
+fission controller), \texttt{hormonal\_bus} (the shared latent substrate),
+\texttt{simulation\_harness} (the benchmark and judge), and an optional
+\texttt{evolutionary\_coder} (\S\ref{sec:evo}). We summarize the design
+principles and then each mechanism, giving the mathematical contract without
+implementation detail.
+
+\subsection{Design principles}
+\begin{enumerate}[leftmargin=1.4em,itemsep=2pt]
+\item \textbf{Dual naming.} Every entity carries a biological name \emph{and} an
+engineering name; the engineering name is authoritative for code, logs, and
+metrics.
+\item \textbf{Gradient safety by isolation.} Structural mutation occurs only
+between backward passes, never concurrently with one; children are born
+\emph{detached}, with disjoint autograd graphs.
+\item \textbf{Determinism where it counts.} Validation runs are executed
+serially for \emph{logical} reproducibility; bit-exact numerical reproducibility
+is documented as best-effort only.
+\item \textbf{Device honesty.} The reference target is CPU-only;
+\texttt{empty\_cache} is guarded by \texttt{cuda.is\_available()}; no result
+depends on a specific accelerator.
+\end{enumerate}
+
+\subsection{Organism core: genome, mutation, energy}
+An organism is an \texttt{nn.Module} $\theta$ augmented with a \emph{genome}: a
+tuple $(\mathrm{id}, g, \mathrm{parent}, s, \sigma, b, \mathrm{dev}, h)$ of unique
+id, generation $g$, parent id, specialization label $s$, mutation seed $\sigma$,
+birth step $b$, device, and an architecture signature $h$ (a canonical hash of
+topology, shapes, and dtypes). Replication is a deep-copy of the state
+dictionary; independence is asserted by distinct storage pointers. Mutation
+perturbs each layer's weights with layer-relative Gaussian noise,
+\begin{equation}
+\theta'_\ell \;=\; \theta_\ell + \varepsilon_\ell,\qquad
+\varepsilon_\ell \sim \mathcal{N}\!\big(0,\; (m\cdot(\mathrm{std}(\theta_\ell)+\epsilon))^2\big),
+\end{equation}
+drawn from a dedicated \texttt{torch.Generator} for reproducibility, with a
+mutability mask freezing normalization parameters and a finiteness rejection
+step. Energy accounting (\S\ref{sec:energy}) is attached as a forward hook under
+\texttt{no\_grad}, so it never perturbs gradients.
+
+\subsection{Mitosis: semantic divergence and clustered fission}
+Given an incoming scenario embedded by a shared encoder $\Phi$ into
+$\{x_i\}\subset\R^d$, the stem-cell router computes a scalar \emph{semantic
+divergence}
+\begin{equation}
+D \;=\; \sum_{k=1}^{4} w_k\, s_k, \qquad
+\textstyle\sum_k w_k = 1,\quad s_k\in[0,1],
+\label{eq:divergence}
+\end{equation}
+a convex combination of four normalized signals: (i)~the entropy of the mass
+distribution across candidate clusters (\emph{cluster-mass entropy}), (ii)~a
+silhouette score \cite{rousseeuw1987silhouettes} computed \emph{on the candidate
+partition} (not before it, to avoid circularity), (iii)~an inter/intra cluster
+variance ratio, and (iv)~mean pairwise distance. Fission fires under
+\emph{hysteresis}: the population expands when $D$ exceeds an upper threshold
+$\tau_{\uparrow}$ (with an exponential moving average and a cooldown), and the
+decision to contract uses a lower threshold $\tau_{\downarrow}<\tau_{\uparrow}$,
+preventing oscillation. The number of children $k^\star$ is chosen by scanning
+$k\in\{2,\dots,k_{\max}\}$ and maximizing $\mathrm{Quality}(k)-\lambda k$;
+if no $k>1$ beats $k=1$, \emph{no mitosis occurs}. Each child inherits the
+parent's weights (deep-copy) plus a specialization bias toward its cluster
+centroid, injected through a fixed-dimensional conditioning context rather than
+by destructively overwriting weights. Children are inserted as DAG leaves with
+disjoint autograd graphs.
+
+\begin{quotation}
+\noindent\textbf{Honesty note.} The post-split equality
+$\lVert f_{\text{after}}-f_{\text{before}}\rVert<10^{-5}$ (before any adaptation)
+is a \emph{deep-copy sanity check}, \emph{not} the Net2Net function-preservation
+identity \cite{chen2016net2net}. We additionally require an \emph{effective
+differentiation} test after adaptation, so that mitosis is shown to do work
+rather than to be expensive theater.
+\end{quotation}
+
+\subsection{Hormonal bus: shared latent field with attention reads}
+The bus is a tensor $\mathbf{M}\in\R^{S\times d}$ of $S$ slots, one per live
+cell. A cell \emph{secretes} by an exponential-moving-average write with norm
+clamping and non-finite sanitization; it \emph{senses} by true cosine attention
+over occupied, non-stale slots:
+\begin{equation}
+a_j \;=\; \mathrm{softmax}_j\!\left(\frac{1}{\tau}\,
+\frac{\langle q, k_j\rangle}{\lVert q\rVert\,\lVert k_j\rVert}\right),
+\qquad
+r \;=\; \sum_{j} a_j\, v_j,
+\label{eq:attn}
+\end{equation}
+where $q$ is the reader's query and $(k_j,v_j)$ are slot key/value. Temporal
+dissipation is applied at each \texttt{tick} to all occupied slots so that stale
+signals decay and attention can discard them. Concurrency uses versioned
+snapshot isolation (copy under lock, compute outside it) and an explicit
+differentiability policy (non-differentiable by default; a stop-gradient on keys
+in the opt-in differentiable mode).
+
+\begin{quotation}
+\noindent\textbf{Honesty note.} Communication is \emph{eventually consistent}: a
+read observes the last consolidated tick, not the instant a peer wrote. The gain
+over text-API agents is the elimination of serialization, at the cost of lock
+synchronization and tick latency.
+\end{quotation}
+
+\subsection{Energy homeostasis}
+\label{sec:energy}
+Each cell carries a scalar state $E_i$ in a \texttt{float64} buffer updated under
+\texttt{no\_grad}:
+\begin{equation}
+E_i(t{+}1)=\mathrm{clamp}\!\Big(
+E_i(t) - \lambda_{\text{basal}} E_i(t) - \Delta E^{\text{work}}
+- \underbrace{\kappa\,H_{\text{norm}}}_{\Delta E^{\text{unc}}}
++ \eta\,\max(0,\Delta \mathrm{util}),\;
+E_{\min}, E_{\max}\Big).
+\label{eq:energy}
+\end{equation}
+Here $\Delta E^{\text{work}}$ is an analytic FLOP/token proxy;
+$H_{\text{norm}}=H/\log K$ is the Shannon uncertainty of the output normalized
+by $\log K$; and regeneration $\eta\max(0,\Delta\mathrm{util})$ rewards
+\emph{progress} (sub-domain loss reduction), never mere activity.
+
+\begin{quotation}
+\noindent\textbf{Honesty note.} The sources, sinks, and \texttt{clamp} in
+Eq.~\eqref{eq:energy} make the system \emph{non-conservative by design}. The
+auditable property is therefore \emph{accounting consistency} (no double
+counting, no floating-point drift, $E_i\ge0$), not physical conservation.
+``Entropy'' here is Shannon uncertainty (a chosen regularizer), not
+thermodynamic entropy.
+\end{quotation}
+
+\subsection{Apoptosis and lifecycle}
+Termination is a state machine
+$\textsc{alive}\!\to\!\textsc{dying}\!\to\!\textsc{transferring}\!\to\!\textsc{dead}$
+triggered by an OR of four conditions with hysteresis (except energy
+exhaustion, which is immediate): (1)~task solved (loss $<\tau_{\text{loss}}$),
+(2)~energy exhausted ($E_i\le E_{\text{death}}$), (3)~low marginal contribution,
+(4)~senescence (age $>T_{\max}$). Before release, the cell transfers its
+representation to the parent by utility-weighted interpolation (LERP/SLERP) or
+embedding distillation \cite{hinton2015distill}, with a pre-merge snapshot for
+rollback if global loss rises. Cleanup follows a canonical order: drop
+references $\to$ detach $\to$ move to CPU $\to$ \texttt{gc.collect()} $\to$
+\texttt{empty\_cache()} (CUDA-guarded), verified by a leak auditor. A topological
+scheduler ensures a parent reduces only after all children have apoptosed.
+
+\subsection{Concurrency and gradient safety}
+The reference concurrency model is \emph{cooperative single-thread}: bus
+coordination runs on the event loop, and the only true parallelism is per-cell
+computation in an executor over disjoint tensors. A budget semaphore admits new
+cells (resolving a cooperative reservation race), a no-\texttt{await}-under-lock
+rule and a total lock order prevent deadlock, and an ownership assertion before
+each backward enforces autograd-graph disjointness. We state plainly that under
+the Python GIL, single-process parallelism is bounded by Amdahl's law; we prefer
+batching sibling cells over adding workers.
+
+%==============================================================================
+\section{A Metaphor$\rightarrow$Mechanism Discipline}
+\label{sec:honesty}
+%==============================================================================
+Our methodological contribution is a uniform discipline for naming. Every term
+is assigned an engineering mechanism, a technical family, and a
+\emph{honesty level}:
+\begin{honesty}
+\item[\textbf{N1 (concrete)}] a verifiable mechanism with a measurable operation.
+\item[\textbf{N2 (analogy)}] a defensible functional analogy, not a literal claim.
+\item[\textbf{N3 (narrative)}] creative license with no mechanical referent;
+permitted only when explicitly flagged.
+\end{honesty}
+
+Table~\ref{tab:dict} is the canonical dictionary and the single source of truth
+for terminology. It is not decoration: the protocol (\S\ref{sec:protocol})
+includes an acceptance test requiring \emph{zero} unqualified claims of ``life,''
+``consciousness,'' ``emergence,'' or ``thermodynamics.''
+
+\begin{table}[t]
+\centering
+\caption{Canonical metaphor$\rightarrow$mechanism dictionary. The engineering
+name is authoritative.}
+\label{tab:dict}
+\small
+\begin{tabular}{@{}p{2.7cm}p{6.4cm}p{3.0cm}c@{}}
+\toprule
+\textbf{Biological term} & \textbf{Engineering mechanism} & \textbf{Family} & \textbf{Level}\\
+\midrule
+Mitosis & Clustered spawning + state-dict deep-copy + conditional routing & MoE / growing nets & N1\\
+Stem cell & Router measuring embedding dispersion; decides expansion & MoE gating / NAS & N1\\
+Semantic divergence & Scalar statistic over embedding geometry, Eq.~\eqref{eq:divergence} & Information theory / clustering & N1\\
+Homeostasis & Regulation of an internal variable to a viable band & Control / resource accounting & N2\\
+Energy & Scalar budget counter (FLOP/token proxy) + uncertainty penalty & Conditional compute & N2\\
+Entropy (drain) & Shannon uncertainty regularizer of the output & Entropy regularization & N2\\
+Apoptosis & Structural pruning + consolidation + memory reclamation & Pruning + distillation + GC & N1\\
+Hormone / exudation & EMA write + cosine-attention read on shared tensor, Eq.~\eqref{eq:attn} & Blackboard / stigmergy / attention & N1\\
+Reverse distillation & Promotion of a winning transform to a reusable library & Pattern mining / library update & N2\\
+``Life'' / ``consciousness'' & --- (no mechanical referent) & --- & \textbf{N3: forbidden unqualified}\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+We regard this table as the paper's most transferable artifact: it is a template
+any bio-inspired system can adopt to convert suggestive names into auditable
+claims, and it turns ``did the authors overclaim?'' from a matter of taste into a
+checkable property.
+
+%==============================================================================
+\section{Pre-Registered Evaluation Protocol}
+\label{sec:protocol}
+%==============================================================================
+We now fix, in advance, the benchmark, the metrics, the experimental design, the
+statistical plan, and the hypotheses. No aspect of this section may be altered
+post hoc without disclosure.
+
+\subsection{Synthetic benchmark with analytic ground truth}
+We use a controllable multi-domain generator. For $K$ latent domains we draw
+orthonormal prototypes $\mathbf{P}\in\R^{K\times d}$ via a QR factorization of a
+Gaussian matrix, generate point clouds $x=p_k+\sigma\varepsilon$, and define a
+domain-coupling matrix $\mathbf{C}$ normalized so that the spectral radius
+$\rho(\gamma\mathbf{C})<1$. The \emph{analytic} global solution is
+\begin{equation}
+\mathbf{S}^\star \;=\; (\Iden - \gamma\mathbf{C})^{-1}\mathbf{P},
+\label{eq:groundtruth}
+\end{equation}
+held \emph{detached} and never observed by any organism. The coupling parameter
+$\gamma\in[0,\rho^{-1})$ controls how much the domains must be solved
+\emph{jointly}: at $\gamma\to0$ the domains are independent and a monolithic
+solver suffices; as $\gamma$ grows, coordination becomes necessary.
+
+\subsection{Operational metrics}
+\paragraph{Computational Survival Rate (CSR).}
+For a cell $c$ define the predicate
+\begin{equation}
+\textsc{survive}(c) = \mathrm{healthy\_fwd} \wedge \neg\mathrm{nan\_inf}
+\wedge \mathrm{transfer\_ok} \wedge \mathrm{clean\_apoptosis}
+\wedge \neg\mathrm{leak} \wedge \neg\mathrm{race},
+\end{equation}
+and $\mathrm{CSR}=\frac{1}{N}\sum_{c}\mathbf{1}[\textsc{survive}(c)]$ over $N$
+declared births. Because CSR is a proportion over a stochastic process, the
+acceptance criterion is \emph{statistical}: the Wilson \cite{wilson1927interval}
+lower bound of CSR at confidence $1-\alpha$ must exceed a pre-declared threshold,
+\emph{or} CSR $=1$ conditioned on a second, tolerance-free oracle (the
+\texttt{gc}-object cross-check) classifying every sub-unity termination as
+genuine necrosis. ``Survival'' is explicitly \emph{not} the absence of
+apoptosis: apoptosis is healthy and expected.
+
+\paragraph{Convergence, decision fidelity, identifiability.}
+Convergence is $\cos(\hat{\mathbf{s}}, \mathbf{S}^\star)$ for the root synthesis
+$\hat{\mathbf{s}}$. Mitosis decision fidelity is reported as a \emph{confusion
+matrix}: firing on multi-domain scenarios and \emph{suppressing} on uni-domain
+scenarios, with precision/recall above a declared floor. For identifiability we
+report the trivial baseline $\cos(\hat{\mathbf{s}}, \bar{\mathbf{p}})$ (against
+the prototype mean) alongside $\cos(\hat{\mathbf{s}}, \mathbf{S}^\star)$ and
+sweep $\gamma$; if both are high the scenario is trivial and is reported as such.
+
+\paragraph{Memory-leak criterion (CPU-only aware).}
+Rather than ``return to baseline $\pm1\%$'' (fragile under allocator noise), the
+leak criterion is the \emph{absence of an upward trend} in a soak test
+(regression slope $b\le b_{\max}$ with $p\ge0.05$) plus a tolerance-free
+\texttt{gc} count of live \texttt{NeuralOrganism} objects returning to zero.
+
+\subsection{Experimental design}
+The core design is a $2\times2$ factorial: mitosis $\in\{\text{on},\text{off}\}$
+$\times$ hormonal bus $\in\{\text{on},\text{off}\}$, with $R$ replicates over a
+seed grid and fixed data and hyperparameters. Control conditions include a
+monolithic solver, a communication-free swarm, and---critically---%
+\emph{adversarial scenarios in which splitting is wrong} (coupled domains that
+require a joint representation), so that the benchmark cannot be won by
+indiscriminate fission.
+
+\subsection{Statistical analysis plan}
+We pre-commit to: Welch's $t$-test or Mann--Whitney per normality checks; effect
+sizes (Cohen's $d$ / Cliff's $\delta$) with $95\%$ bootstrap confidence
+intervals; family-wise error control via Holm--Bonferroni
+\cite{holm1979bonferroni}; and an a-priori power analysis to size $R$ for
+power $\ge0.8$ at a pre-declared effect size. Validation runs use
+\texttt{max\_workers}$=1$ (serial, logically deterministic); performance and
+correctness are measured separately. Metric tolerances are derived empirically
+from CPU floating-point jitter (typically $10^{-4}$--$10^{-3}$, not $10^{-5}$).
+
+\subsection{Hypotheses}
+We state falsifiable predictions and pre-commit to publishing refutations.
+\begin{hypothesis}[Mitosis utility]
+On multi-domain scenarios, enabling mitosis increases
+$\cos(\hat{\mathbf{s}},\mathbf{S}^\star)$ over the monolithic baseline, and the
+margin \emph{increases} with coupling $\gamma$.
+\end{hypothesis}
+\begin{hypothesis}[Bus utility]
+Enabling the hormonal bus increases convergence over a communication-free swarm,
+with the largest effect at high $\gamma$.
+\end{hypothesis}
+\begin{hypothesis}[Decision fidelity]
+The mitosis router fires on multi-domain and suppresses on uni-domain scenarios
+with precision and recall above the declared floor.
+\end{hypothesis}
+\begin{hypothesis}[Survival]
+The Wilson lower bound of CSR meets the declared threshold with no unrecovered
+anomaly and no memory-leak trend.
+\end{hypothesis}
+\begin{hypothesis}[Effective differentiation]
+After adaptation, sibling cells diverge and specialize (inter-sibling distance
+and per-domain loss reduction exceed a floor), i.e., mitosis performs work.
+\end{hypothesis}
+A null result on H1 or H2---mitosis or communication failing to help---is a
+valid, publishable outcome and would itself constrain the design space.
+
+%==============================================================================
+\section{Optional Extension: Evolutionary Auto-Refactoring}
+\label{sec:evo}
+%==============================================================================
+As a capability extension built atop the frozen framework, the
+\texttt{evolutionary\_coder} applies genetic-improvement search
+\cite{koza1992gp,petke2018gi,legoues2012genprog} to refactor a target Python
+function, \emph{reusing} the orchestration, lifecycle, and telemetry machinery
+but operating on \emph{programs, not tensors}. Four honesty corrections are
+mandatory and are themselves acceptance criteria:
+\begin{enumerate}[leftmargin=1.4em,itemsep=2pt]
+\item \textbf{No gradients.} Refactoring is discrete, non-differentiable search;
+``dropped gradients during dynamic execution'' is a category error. Static audit
+forbids any autograd reference in this module.
+\item \textbf{Evolution does not discover a complexity class.} Turning an
+$O(N^2)$ sort into $O(N\log N)$ does not emerge from random mutation; the gain
+comes either from an AST transform \emph{already present in the catalog} or from
+an LLM proposal (knowledge, not natural selection). Each variant is
+\emph{labeled by origin}, and success is measured as latency reduction against a
+baseline, never narrated as emergent discovery.
+\item \textbf{\texttt{exec} does not isolate.} Variants run \emph{only} in a
+resource-limited \texttt{subprocess} (\texttt{setrlimit} / Windows Job Objects,
+hard timeout, no network); in-process \texttt{exec}/\texttt{eval} of untrusted
+code is forbidden.
+\item \textbf{``Reverse distillation'' is pattern harvesting.} The winning
+transform is promoted to the deterministic catalog; no network ``learns the
+concept of clean code.''
+\end{enumerate}
+Fitness is \emph{lexicographic}: correctness as a hard gate (any failing test
+$\Rightarrow$ fitness $0$), then median latency over $R$ repetitions, then memory
+delta. Two separated paths preserve the reproducibility decision of the
+framework: an AST-deterministic path (in the validated set) and a
+quarantined, explicitly non-reproducible LLM path (excluded from statistical
+validation).
+
+%==============================================================================
+\section{Threats to Validity}
+%==============================================================================
+\paragraph{Construct validity.}
+``Energy'' is a compute proxy, not a physical quantity; biological terms are
+scaffolds (Table~\ref{tab:dict}). Semantic divergence depends on the encoder
+$\Phi$; a poor $\Phi$ can mask or fabricate multi-domain structure. We freeze
+$\Phi$'s contract in advance and report sensitivity.
+
+\paragraph{Internal validity.}
+Asynchronous execution is a source of nondeterminism; we neutralize it for
+validation by serial execution and a canonical reduction order, and we
+audit for read-after-write races directly.
+
+\paragraph{External validity.}
+The benchmark is synthetic, the models are small, and the host is CPU-only.
+Results---if obtained---may not transfer to large-scale or GPU regimes or to
+real workloads. We make no scaling claims beyond the tested regime, in keeping
+with the hardware-lottery caution \cite{hooker2021hardware}.
+
+\paragraph{Statistical validity.}
+Multiple comparisons are corrected \cite{holm1979bonferroni}; replicate counts
+are sized by power analysis; tolerances are empirical, not aspirational.
+
+%==============================================================================
+\section{Ethical and Epistemic Considerations}
+%==============================================================================
+The primary ethical risk of this line of work is not physical but
+\emph{rhetorical}: presenting a Mixture-of-Experts router with pruning as an
+``autonomous digital life form'' misleads readers and erodes trust in the field
+\cite{lipton2019troubling}. Our N1/N2/N3 discipline and its zero-unqualified-%
+claim acceptance test are a direct, checkable countermeasure. The optional
+evolutionary extension executes generated code; we contain this strictly in an
+isolated \texttt{subprocess} with resource limits and no network, and we treat
+all generated code as untrusted. We foresee no dual-use concern beyond standard
+code-execution hygiene.
+
+%==============================================================================
+\section{Conclusion and Future Work}
+%==============================================================================
+\bioma{} reframes an agent framework as a dynamical system: a population of
+neural modules that grows and prunes itself in a runtime-mutable DAG,
+coordinated through a shared latent field and bounded by a compute budget. Its
+mechanisms are not new in isolation---they are borrowed, with credit, from MoE,
+dynamic networks, blackboard systems, pruning, and distillation---but their
+honest integration under a single lifecycle, and the discipline that keeps the
+biological narrative from outrunning the engineering, are the contribution.
+Equally, the pre-registered protocol commits us to be judged by predictions. The
+natural next step is the Stage-2 report: execute the $2\times2$ ablation and the
+soak test on the reference implementation, and report---whatever the outcome---%
+the CSR, the convergence-versus-$\gamma$ curves, and the mitosis confusion
+matrix, including any refutation of H1--H5. Longer-term directions include a
+genuinely emergent (NCA-style) growth rule as an explicitly labeled research
+branch, and a GPU study to test whether the orchestration survives contact with
+real parallelism.
+
+%==============================================================================
+\section*{Reproducibility Statement}
+%==============================================================================
+All hypotheses, metrics, and analyses are fixed in this Stage-1 document.
+Planned artifacts for Stage~2 include: seeded, versioned configuration; a
+declared births denominator $N$; serial validation for logical reproducibility;
+the synthetic-benchmark generator with its coupling sweep; and the leak-auditor
+and race-probe harnesses. Bit-exact numerical reproducibility is documented as
+best-effort under serial execution only. We will release code and logs with the
+Stage-2 report.
+
+%==============================================================================
+\section*{Data Availability}
+%==============================================================================
+No datasets were used or generated for this Stage-1 report; the Stage-2
+benchmark is fully synthetic and generated from released seeds.
+
+%==============================================================================
+\begin{thebibliography}{99}
+\small
+\bibitem{paszke2019pytorch} A.~Paszke et al.,
+``PyTorch: An Imperative Style, High-Performance Deep Learning Library,''
+\emph{NeurIPS}, 2019.
+\bibitem{shazeer2017moe} N.~Shazeer et al.,
+``Outrageously Large Neural Networks: The Sparsely-Gated Mixture-of-Experts
+Layer,'' \emph{ICLR}, 2017.
+\bibitem{fedus2022switch} W.~Fedus, B.~Zoph, N.~Shazeer,
+``Switch Transformers: Scaling to Trillion Parameter Models with Simple and
+Efficient Sparsity,'' \emph{JMLR}, 2022.
+\bibitem{chen2016net2net} T.~Chen, I.~Goodfellow, J.~Shlens,
+``Net2Net: Accelerating Learning via Knowledge Transfer,'' \emph{ICLR}, 2016.
+\bibitem{rusu2016progressive} A.~A.~Rusu et al.,
+``Progressive Neural Networks,'' arXiv:1606.04671, 2016.
+\bibitem{yoon2018den} J.~Yoon, E.~Yang, J.~Lee, S.~J.~Hwang,
+``Lifelong Learning with Dynamically Expandable Networks,'' \emph{ICLR}, 2018.
+\bibitem{zoph2017nas} B.~Zoph, Q.~V.~Le,
+``Neural Architecture Search with Reinforcement Learning,'' \emph{ICLR}, 2017.
+\bibitem{elsken2019nas} T.~Elsken, J.~H.~Metzen, F.~Hutter,
+``Neural Architecture Search: A Survey,'' \emph{JMLR}, 2019.
+\bibitem{ha2017hypernetworks} D.~Ha, A.~Dai, Q.~V.~Le,
+``HyperNetworks,'' \emph{ICLR}, 2017.
+\bibitem{mordvintsev2020growing} A.~Mordvintsev, E.~Randazzo, E.~Niklasson,
+M.~Levin, ``Growing Neural Cellular Automata,'' \emph{Distill}, 2020.
+\bibitem{hayesroth1985blackboard} B.~Hayes-Roth,
+``A Blackboard Architecture for Control,'' \emph{Artificial Intelligence},
+26(3), 1985.
+\bibitem{dorigo1996ant} M.~Dorigo, V.~Maniezzo, A.~Colorni,
+``Ant System: Optimization by a Colony of Cooperating Agents,''
+\emph{IEEE Trans. Systems, Man, and Cybernetics--B}, 26(1), 1996.
+\bibitem{graves2016dnc} A.~Graves et al.,
+``Hybrid Computing Using a Neural Network with Dynamic External Memory,''
+\emph{Nature}, 538, 2016.
+\bibitem{vaswani2017attention} A.~Vaswani et al.,
+``Attention Is All You Need,'' \emph{NeurIPS}, 2017.
+\bibitem{graves2016act} A.~Graves,
+``Adaptive Computation Time for Recurrent Neural Networks,''
+arXiv:1603.08983, 2016.
+\bibitem{stanley2002neat} K.~O.~Stanley, R.~Miikkulainen,
+``Evolving Neural Networks through Augmenting Topologies,''
+\emph{Evolutionary Computation}, 10(2), 2002.
+\bibitem{real2019amoeba} E.~Real, A.~Aggarwal, Y.~Huang, Q.~V.~Le,
+``Regularized Evolution for Image Classifier Architecture Search,''
+\emph{AAAI}, 2019.
+\bibitem{stanley2019neuroevolution} K.~O.~Stanley, J.~Clune, J.~Lehman,
+R.~Miikkulainen, ``Designing Neural Networks through Neuroevolution,''
+\emph{Nature Machine Intelligence}, 1, 2019.
+\bibitem{koza1992gp} J.~R.~Koza,
+\emph{Genetic Programming: On the Programming of Computers by Means of Natural
+Selection}, MIT Press, 1992.
+\bibitem{legoues2012genprog} C.~Le~Goues, T.~Nguyen, S.~Forrest, W.~Weimer,
+``GenProg: A Generic Method for Automatic Software Repair,''
+\emph{IEEE Trans. Software Engineering}, 38(1), 2012.
+\bibitem{petke2018gi} J.~Petke et al.,
+``Genetic Improvement of Software: A Comprehensive Survey,''
+\emph{IEEE Trans. Evolutionary Computation}, 22(3), 2018.
+\bibitem{lipton2019troubling} Z.~C.~Lipton, J.~Steinhardt,
+``Troubling Trends in Machine Learning Scholarship,''
+\emph{ACM Queue} / arXiv:1807.03341, 2019.
+\bibitem{chambers2013registered} C.~D.~Chambers,
+``Registered Reports: A New Publishing Initiative at Cortex,''
+\emph{Cortex}, 49(3), 2013.
+\bibitem{pineau2021repro} J.~Pineau et al.,
+``Improving Reproducibility in Machine Learning Research,'' \emph{JMLR}, 2021.
+\bibitem{gundersen2018repro} O.~E.~Gundersen, S.~Kjensmo,
+``State of the Art: Reproducibility in Artificial Intelligence,''
+\emph{AAAI}, 2018.
+\bibitem{langton1989alife} C.~G.~Langton (ed.),
+\emph{Artificial Life}, Addison-Wesley, 1989.
+\bibitem{hooker2021hardware} S.~Hooker,
+``The Hardware Lottery,'' \emph{Communications of the ACM}, 64(12), 2021.
+\bibitem{wilson1927interval} E.~B.~Wilson,
+``Probable Inference, the Law of Succession, and Statistical Inference,''
+\emph{J. American Statistical Association}, 22, 1927.
+\bibitem{holm1979bonferroni} S.~Holm,
+``A Simple Sequentially Rejective Multiple Test Procedure,''
+\emph{Scandinavian J. Statistics}, 6(2), 1979.
+\bibitem{rousseeuw1987silhouettes} P.~J.~Rousseeuw,
+``Silhouettes: A Graphical Aid to the Interpretation and Validation of Cluster
+Analysis,'' \emph{J. Computational and Applied Mathematics}, 20, 1987.
+\bibitem{lecun1990obd} Y.~LeCun, J.~S.~Denker, S.~A.~Solla,
+``Optimal Brain Damage,'' \emph{NeurIPS}, 1990.
+\bibitem{frankle2019lottery} J.~Frankle, M.~Carbin,
+``The Lottery Ticket Hypothesis: Finding Sparse, Trainable Neural Networks,''
+\emph{ICLR}, 2019.
+\bibitem{hinton2015distill} G.~Hinton, O.~Vinyals, J.~Dean,
+``Distilling the Knowledge in a Neural Network,'' arXiv:1503.02531, 2015.
+\end{thebibliography}
+
+%==============================================================================
+\appendix
+\section{Notation}
+%==============================================================================
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Symbol} & \textbf{Meaning}\\
+\midrule
+$d$ & shared latent / embedding dimension\\
+$\Phi$ & frozen scenario encoder, $\Phi:\text{scenario}\to\R^d$\\
+$D$ & semantic divergence, Eq.~\eqref{eq:divergence}\\
+$\tau_{\uparrow},\tau_{\downarrow}$ & upper/lower mitosis thresholds (hysteresis)\\
+$k^\star$ & selected number of children\\
+$\mathbf{M}\in\R^{S\times d}$ & hormonal bus (shared latent field), $S$ slots\\
+$a_j$ & cosine-attention weight over slot $j$, Eq.~\eqref{eq:attn}\\
+$E_i$ & energy state of cell $i$, Eq.~\eqref{eq:energy}\\
+$\kappa,\eta,\lambda_{\text{basal}}$ & uncertainty, regeneration, basal-decay coefficients\\
+$H_{\text{norm}}$ & normalized Shannon uncertainty of the output\\
+$\mathbf{P},\mathbf{C},\gamma$ & prototypes, coupling matrix, coupling strength\\
+$\mathbf{S}^\star$ & analytic ground truth, Eq.~\eqref{eq:groundtruth}\\
+$N$ & declared number of births (CSR denominator)\\
+$1-\alpha$ & Wilson confidence level for CSR\\
+$R$ & replicate / repetition count\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section*{Manuscript Status}
+\noindent This is a Stage-1 (design and protocol) registered report. It contains
+no empirical results by design. A Stage-2 report will present the executed
+protocol and its outcomes, including any refutation of the stated hypotheses.
+
+\end{document}
