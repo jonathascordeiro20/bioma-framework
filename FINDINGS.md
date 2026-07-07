@@ -9,7 +9,7 @@
 
 - 🟢 **Context apoptosis (−78–80% input tokens) is the real, universal, sellable win.** Every model, every task.
 - 🟢 **The Rust kernel is genuinely fast and resilient**: ~2M signals/s at ~5μs mean latency, latency stays **bounded under 10× load**.
-- 🔴 **Multi-LLM mitosis+synthesis does NOT improve answer quality or security remediation.** On ground-truth executed tests it was **neutral on frontier models (ceiling) and harmful on weaker ones** (synthesis corrupts correct answers). This thesis is **refuted** by our own data and is **not** part of the honest pitch.
+- 🔴 **Multi-LLM mitosis+synthesis does NOT improve answer quality or security remediation.** On ground-truth executed tests it was **neutral on frontier models (ceiling) and harmful on weaker ones** (synthesis corrupts correct answers). Even the **corrected best-case design** (verified cross-model selection, baseline-in-pool) delivered **+0** on hard security tasks. This thesis is **refuted** by our own data across three independent experiments and is **not** part of the honest pitch.
 - ✅ **Positioning:** B.I.O.M.A. makes AI processing *viable, sustainable, and resilient* — an **efficiency/infrastructure layer**, not a system that makes AI "smarter."
 
 ---
@@ -23,7 +23,8 @@
 | Kernel latency stays bounded under 10× load | 🟢 **Proven** | avg 4.5μs→5.0μs (1.1×), p99 21μs→15μs |
 | Mitosis+synthesis improves quality | 🔴 **Refuted** | Objective code eval: 95%→83% (−17 tests) |
 | Mitosis improves security remediation | 🔴 **Refuted** | Defense eval: baseline 98% ≥ synthesis 90% = selection 90% |
-| "Selection-by-execution is provably ≥ baseline" | 🟡 **Corrected** | Only ≥ best *candidate*; needs the baseline **in the pool** to be ≥ baseline |
+| Verified cross-model selection improves security (corrected best-case design) | 🔴 **Refuted** | +0 vs best single-shot; all models 100% on hard tasks (no headroom) |
+| "Selection-by-execution is provably ≥ baseline" | 🟢 **Corrected & validated** | With the baseline **in the pool** it held exactly (30/30 = 30/30, monotonic) — but delivered +0 |
 | Resilient "at industrial level" (end-to-end system) | 🟡 **Goal** | Kernel primitive proven; full system not load-tested |
 
 ---
@@ -117,6 +118,29 @@ A scout cell probes difficulty; only low self-confidence escalates to full mitos
 - ⚠️ Hard task → GPT-4o self-rated **95** on a lock-free concurrency proof → did not
   escalate. **LLM self-confidence is overconfident**, so it is a weak escalation
   trigger. A robust gate needs a consistency/critic signal, not self-report.
+
+### 7. Corrected mitosis: verified cross-model selection — 🔴 still +0 (`bioma_verified_selection_eval.py`)
+The best-case design the analysis pointed to: **baseline-in-pool** (each model's plain
+answer is a candidate → selection can't drop below baseline) + **cross-model** diversity
+(GPT-4o + Grok-4.3 + Llama-3.3-70B) + **objective verification** (run the checks) as the
+selector — never LLM synthesis. Tested on 3 harder security tasks (30 checks: Windows
+reserved-name filename sanitizer, open-redirect validator with userinfo/backslash
+bypasses, PII masker with separated card numbers):
+
+| Reference | Score |
+| :--- | :---: |
+| GPT-4o single-shot | 30/30 (100%) |
+| Grok-4.3 single-shot | 30/30 (100%) |
+| Llama-3.3-70B single-shot | 30/30 (100%) |
+| Best single model | 30/30 (100%) |
+| **Verified cross-model selection** | **30/30 (100%)** |
+
+**Δ = +0.** Two things are true and both matter: (1) the corrected design *worked as
+designed* — selection held exactly at baseline (monotonic, **never worse**); (2) it
+delivered **no gain**, because all models hit the **ceiling** even on the harder tasks.
+Three independent experiments (§3, §5, §7) now converge on the same verdict: on
+well-defined, objectively-verifiable tasks, modern single-shot is already at ceiling, so
+mitosis — even in its best-case corrected form — has no headroom to add value, at 6× cost.
 
 ---
 
