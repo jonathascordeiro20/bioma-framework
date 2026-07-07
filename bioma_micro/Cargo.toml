@@ -1,0 +1,28 @@
+[package]
+name = "bioma_micro"
+version = "1.0.0"
+edition = "2021"
+description = "B.I.O.M.A. Micro-Kernel — lock-free hormonal bus + context apoptosis (PyO3)."
+license = "MIT"
+
+[lib]
+name = "bioma_micro"
+# cdylib → a native Python extension module loadable by CPython.
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.22", features = ["extension-module"] }
+crossbeam-channel = "0.5"
+
+# Aggressive optimisation for the microsecond hot path — inline everything, fuse
+# codegen units. No panic="abort": PyO3 converts Rust panics into Python
+# exceptions at the FFI boundary, which requires unwinding.
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
+
+# Standalone crate — its own workspace root, isolated from the sibling `bioma_kernel`
+# crate so nested-Cargo workspace resolution never clashes.
+[workspace]

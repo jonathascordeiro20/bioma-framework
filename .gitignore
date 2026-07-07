@@ -12,7 +12,7 @@ build/
 dist/
 
 # --- rust / maturin ---
-bioma_kernel/target/
+target/
 *.whl
 
 # --- scratch ---
