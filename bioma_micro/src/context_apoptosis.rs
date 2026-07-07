@@ -10,6 +10,9 @@
 //! Result: the input context window is dehydrated (universal input-token savings)
 //! with a pure-Rust, thread-safe, allocation-light pass.
 
+use std::collections::hash_map::DefaultHasher;
+use std::collections::HashSet;
+use std::hash::{Hash, Hasher};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Mutex;
 use std::time::Instant;
@@ -218,4 +221,38 @@ pub fn dehydrate<'py>(
     d.set_item("reduction", reduction)?;
     d.set_item("kernel_latency_us", latency_us)?;
     Ok(d)
+}
+
+// --------------------------------------------------------------------------- //
+//  saturation_scan() — cognitive-DDoS / flood detector
+// --------------------------------------------------------------------------- //
+/// Detect input saturation: the fraction of the payload that is **repetition**.
+///
+/// Cognitive-DDoS, forged-log floods and jailbreak spam are highly repetitive —
+/// they reuse the same phrases to exhaust the context window. This scores the
+/// fraction of duplicate `w`-token shingles (default 8): ~1.0 = a repetitive
+/// flood (RED ALERT), ~0.0 = natural, high-entropy text. Pure O(n), no
+/// allocation (shingles are hashed, not materialised), microsecond-scale.
+#[pyfunction]
+#[pyo3(signature = (text, window = 8))]
+pub fn saturation_scan(text: &str, window: usize) -> f32 {
+    let w = window.max(1);
+    let tokens: Vec<&str> = text.split_whitespace().collect();
+    let n = tokens.len();
+    if n < w * 2 {
+        return 0.0;
+    }
+    let windows = n - w + 1;
+    let mut seen: HashSet<u64> = HashSet::with_capacity(windows);
+    let mut dupes = 0usize;
+    for i in 0..windows {
+        let mut h = DefaultHasher::new();
+        for t in &tokens[i..i + w] {
+            t.hash(&mut h);
+        }
+        if !seen.insert(h.finish()) {
+            dupes += 1;
+        }
+    }
+    dupes as f32 / windows as f32
 }

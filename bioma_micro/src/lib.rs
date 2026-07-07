@@ -13,7 +13,7 @@ mod hormonal_bus;
 use pyo3::prelude::*;
 use pyo3::wrap_pyfunction;
 
-use context_apoptosis::{dehydrate, ContextApoptosis};
+use context_apoptosis::{dehydrate, saturation_scan, ContextApoptosis};
 use hormonal_bus::{HormonalBus, HormonalSignal};
 
 /// The native module — `import bioma_micro`.
@@ -25,6 +25,7 @@ fn bioma_micro(m: &Bound<'_, PyModule>) -> PyResult<()> {
     // Apoptosis filter
     m.add_class::<ContextApoptosis>()?;
     m.add_function(wrap_pyfunction!(dehydrate, m)?)?;
+    m.add_function(wrap_pyfunction!(saturation_scan, m)?)?;
 
     // Metabolic signal classes (bitwise flags) for the Python layer.
     m.add("SYSTEM", context_apoptosis::SYSTEM)?;
