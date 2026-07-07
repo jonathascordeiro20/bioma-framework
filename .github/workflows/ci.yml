@@ -43,3 +43,12 @@ jobs:
       #     pip install torch --index-url https://download.pytorch.org/whl/cpu
       #     pip install -r bioma_engine/requirements.txt
       #     python -m pytest bioma_engine/tests -q
+
+  docker-image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Proves the production image builds — the Rust/PyO3 kernel stage in a clean
+      # Linux container (the runtime stage adds torch via a routine pip install).
+      - name: Build kernel image stage
+        run: docker build --target build -t bioma-kernel:ci .
