@@ -16,10 +16,8 @@ use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList};
 
 mod memory;
-mod mitosis_test;
 mod telemetry;
 use memory::{CtxCore, StateContext};
-use mitosis_test::MitosisBenchmark;
 use telemetry::Telemetry;
 
 // --------------------------------------------------------------------------- //
@@ -411,7 +409,6 @@ fn bioma_kernel(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<HormonalBus>()?;
     m.add_class::<StateContext>()?;
     m.add_class::<StressTester>()?;
-    m.add_class::<MitosisBenchmark>()?;
-    m.add("__doc__", "B.I.O.M.A. Rust kernel — hormonal bus, memory apoptosis, stress, telemetry, mitosis.")?;
+    m.add("__doc__", "B.I.O.M.A. Rust kernel — hormonal bus, memory apoptosis, stress, telemetry.")?;
     Ok(())
 }
