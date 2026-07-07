@@ -140,6 +140,26 @@ class IntegrateRequest(BaseModel):
                                        description="Per-sandbox execution deadline (apoptosis trigger).")
 
 
+class OrchestrateRequest(BaseModel):
+    """An ONLINE evolutionary orchestration over OpenRouter (dual-mode: this is the
+    *online* brain; the offline optimizer lives on /v1/bioma/integrate)."""
+
+    task: str = Field(
+        ..., min_length=1, max_length=16000,
+        description="The complex reasoning/refactoring task to orchestrate.",
+        examples=["Refactor charge(user_id, cents) to be thread-safe and injection-free."],
+    )
+    model: str = Field(default="openai/gpt-4o",
+                       description="OpenRouter model id driving the sub-agents.")
+    mitosis: int = Field(default=3, ge=2, le=4,
+                         description="Number of parallel specialist sub-agents.")
+    context: Optional[list] = Field(
+        default=None,
+        description="Optional prior working-memory lines (list[str]); apoptosis "
+                    "prunes them before the model calls. Omitted → a demo memory.",
+    )
+
+
 # --------------------------------------------------------------------------- #
 #  Routes
 # --------------------------------------------------------------------------- #
@@ -184,6 +204,34 @@ async def evolve(req: IntegrateRequest) -> JSONResponse:
     surface consumed by the visual test terminal (``bioma_chat_test.html``).
     Identical request/response contract; enforces the same OFFLINE_ONLY autarky."""
     return await integrate(req)
+
+
+@app.post("/v1/orchestrate")
+async def orchestrate_online(req: OrchestrateRequest) -> JSONResponse:
+    """ONLINE mode — orchestrate market LLMs via OpenRouter through the full
+    organic life-cycle (hormonal bus → apoptosis → mitosis → convergence) and
+    return the synthesised answer + REAL telemetry (tokens, cost, μs timings).
+
+    Runs for real when ``OPENROUTER_API_KEY`` is a valid ``sk-or`` key (from the
+    platform secrets manager); otherwise it answers in a clearly-labelled
+    ``mode: "mock"`` so the surface never hard-fails without a key."""
+    try:
+        from bioma_orchestrator.live_pipeline import evolve as run_live
+    except Exception as exc:  # online deps (openai) unavailable in this build
+        return JSONResponse(
+            {"error": f"online module unavailable: {type(exc).__name__}: {exc}"},
+            status_code=503,
+        )
+    try:
+        result = await run_live(req.task, model=req.model, mitosis=req.mitosis,
+                                context=req.context)
+        code = 200 if not result.get("error") else 502
+        return JSONResponse(result, status_code=code)
+    except Exception as exc:  # never leak a stack trace to the client
+        return JSONResponse(
+            {"error": f"orchestration failed: {type(exc).__name__}: {exc}"},
+            status_code=500,
+        )
 
 
 @app.post("/v1/bioma/synthesize")
