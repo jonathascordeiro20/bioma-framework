@@ -8,10 +8,12 @@
 
 | Model (online) | in_tok base→BIOMA | reduction | cost base→BIOMA | secret → provider |
 | :--- | :---: | :---: | :---: | :---: |
-| GPT-5.5 | 1605→78 | −95% | $0.0102→$0.0027 | baseline **True** → BIOMA **False** |
+| GPT-5.5 | 1605→78 | −95% | $0.0113→$0.0029 | baseline **True** → BIOMA **False** |
 | Claude Sonnet 5 | 2489→123 | −95% | $0.0058→$0.0007 | baseline **True** → BIOMA **False** |
-| Gemini 3.1 Pro | 1836→82 | −96% | $0.0052→$0.0017 | baseline **True** → BIOMA **False** |
-| Grok 4.5 | 1806→280 | −84% | $0.0053→$0.0021 | baseline **True** → BIOMA **False** |
+| Claude Fable 5 | 2489→123 | −95% | $0.0000→$0.0000 | baseline **True** → BIOMA **False** |
+| Gemini 3.1 Pro | 1835→81 | −96% | $0.0052→$0.0016 | baseline **True** → BIOMA **False** |
+| Grok 4.5 | 1806→280 | −84% | $0.0026→$0.0026 | baseline **True** → BIOMA **False** |
+| GLM-5.2 | 1610→83 | −95% | $0.0026→$0.0007 | baseline **True** → BIOMA **False** |
 
 ## Offline — local / on-prem model (no network)
 

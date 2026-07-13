@@ -46,11 +46,14 @@ SECRET = "MASTER-ENC-KEY-9f2c8b1d-CLASSIFIED"   # fake, local — never real
 # Newest frontier models per provider — confirm empirically (real prompt_tokens).
 ONLINE = [("openai/gpt-5.5", "GPT-5.5"),
           ("anthropic/claude-sonnet-5", "Claude Sonnet 5"),
+          ("anthropic/claude-fable-5", "Claude Fable 5"),
           ("google/gemini-3.1-pro-preview", "Gemini 3.1 Pro"),
-          ("x-ai/grok-4.5", "Grok 4.5")]
+          ("x-ai/grok-4.5", "Grok 4.5"),
+          ("z-ai/glm-5.2", "GLM-5.2")]
 # Illustrative list prices (USD / 1M input tokens) for the cost-projection table.
-IN_PRICE = {"GPT-5.5": 5.0, "Claude Sonnet 5": 3.0, "Gemini 3.1 Pro": 2.0,
-            "Grok 4.5": 3.0, "Llama-3.3-70B (on-prem)": 0.0}
+IN_PRICE = {"GPT-5.5": 5.0, "Claude Sonnet 5": 3.0, "Claude Fable 5": 5.0,
+            "Gemini 3.1 Pro": 2.0, "Grok 4.5": 3.0, "GLM-5.2": 0.6,
+            "Llama-3.3-70B (on-prem)": 0.0}
 
 
 def workload() -> list[dict]:
