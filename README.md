@@ -65,7 +65,7 @@ k.saturation_scan(payload)     # cognitive-DDoS score 0..1 (flood ≈ 1.0)
 | Capability | Result | Source |
 |---|---|---|
 | Context apoptosis | **−80% input tokens** (up to −97% long sessions) | `tests/test_enxuto_efficiency.py` |
-| Hormonal bus | **~2M signals/s @ ~5μs**, bounded under 10× load | `bioma_kernel_loadtest.py` |
+| Hormonal bus | **~2M signals/s @ ~5μs**, bounded under 10× load | archived bench (research repo) |
 | Cognitive-DDoS mitigation | 15k-token flood → dehydrated pre-dispatch | `tests/test_sovereign_defense.py` |
 | Secret redaction | vault values never reach the model | `reports/BIOMA_IMMUNITY_VERDICT.md` |
 
@@ -95,9 +95,6 @@ tests/         unit suite (kernel, firewall, server) + real end-to-end validatio
 FINDINGS.md    ground-truth evaluation (proven / refuted), reproducible
 reports/       immunity verdict (APT war-game)
 ```
-
-> Legacy layers (`bioma_orchestrator/`, `bioma_kernel/`) remain only to reproduce
-> `FINDINGS.md`; `bioma_micro` + `bioma` are the product.
 
 ## License
 

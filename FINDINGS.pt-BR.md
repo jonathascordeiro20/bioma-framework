@@ -155,6 +155,11 @@ o custo.
 
 ## Reprodutibilidade
 
+> As harnesses abaixo estão **arquivadas num repo privado de pesquisa** — dependem do
+> orquestrador multi-LLM legado (`bioma_orchestrator`), removido do produto enxuto quando a
+> mitose foi refutada. Este documento preserva todo o método e os resultados; as alegações do
+> próprio produto (apoptose + firewall) são reproduzíveis a partir de [`tests/`](tests/).
+
 | Script | O que mede | Custo |
 | :--- | :--- | :--- |
 | `bioma_kernel_loadtest.py` | throughput/latência do kernel sob 1k–10k agentes | grátis |

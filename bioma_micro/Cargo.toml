@@ -23,6 +23,6 @@ lto = true
 codegen-units = 1
 strip = true
 
-# Standalone crate — its own workspace root, isolated from the sibling `bioma_kernel`
-# crate so nested-Cargo workspace resolution never clashes.
+# Standalone crate — its own workspace root, so nested-Cargo workspace
+# resolution never clashes with any parent tree.
 [workspace]

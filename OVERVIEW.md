@@ -50,7 +50,7 @@ Every number below was measured this project, not asserted. Scripts are in the r
   input **47,890 → 2,022 tokens** (93.8% avg/round, 97.5% by round 16), apoptosis
   latency **~1.6μs** avg, **0/16** dispatch errors, whole session cost **$0.0191**.
 
-### Resilience — the Rust kernel (`bioma_kernel_loadtest.py`)
+### Resilience — the Rust kernel (archived research bench)
 - **~2M signals/s** at **~5μs mean latency**.
 - **1k → 10k concurrent agents (10× load):** mean latency 4.5μs → 5.0μs (**1.1×**),
   p99 21μs → 15μs — **bounded, sub-linear** under load.

@@ -177,6 +177,12 @@ mitosis — even in its best-case corrected form — has no headroom to add valu
   which only matters with objective verification.
 
 ## Reproducibility
+
+> The harnesses below are **archived in a private research repo** — they depend on the legacy
+> multi-LLM orchestrator (`bioma_orchestrator`), removed from the lean product once mitosis was
+> refuted. This document preserves the full method and results; the product's own claims
+> (apoptosis + firewall) are reproducible from [`tests/`](tests/).
+
 | Script | What it measures | Cost |
 | :--- | :--- | :--- |
 | `bioma_kernel_loadtest.py` | kernel throughput/latency under 1k–10k agents | free |

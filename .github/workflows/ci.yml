@@ -15,9 +15,6 @@ jobs:
       - name: cargo check (micro-kernel — lean core)
         working-directory: bioma_micro
         run: cargo check --all-targets
-      - name: cargo check (kernel — resilience bench)
-        working-directory: bioma_kernel
-        run: cargo check --all-targets
 
   python-tests:
     runs-on: ubuntu-latest
@@ -45,15 +42,6 @@ jobs:
         run: |
           pip install pytest fastapi "uvicorn[standard]" "openai>=1" python-dotenv "pydantic>=2"
           python -m pytest tests/test_kernel.py tests/test_firewall.py tests/test_server.py -q
-
-      - name: Build the legacy kernel + run orchestrator tests (FINDINGS evidence)
-        env:
-          OMP_NUM_THREADS: "1"
-          KMP_DUPLICATE_LIB_OK: "TRUE"
-        run: |
-          pip install ./bioma_kernel
-          pip install httpx python-dotenv
-          python -m pytest bioma_orchestrator/tests -q
 
   docker-image:
     runs-on: ubuntu-latest

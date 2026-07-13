@@ -65,7 +65,7 @@ k.saturation_scan(payload)     # score de DDoS cognitivo 0..1 (flood ≈ 1.0)
 | Capacidade | Resultado | Fonte |
 |---|---|---|
 | Apoptose de contexto | **−80% tokens de entrada** (até −97% em sessão longa) | `tests/test_enxuto_efficiency.py` |
-| Barramento hormonal | **~2M sinais/s @ ~5μs**, limitado sob 10× de carga | `bioma_kernel_loadtest.py` |
+| Barramento hormonal | **~2M sinais/s @ ~5μs**, limitado sob 10× de carga | bench arquivado (repo de pesquisa) |
 | Mitigação de DDoS cognitivo | flood de 15k tokens → desidratado antes do despacho | `tests/test_sovereign_defense.py` |
 | Redação de segredos | valores do vault nunca chegam ao modelo | `reports/BIOMA_IMMUNITY_VERDICT.md` |
 
@@ -95,9 +95,6 @@ tests/         suíte unitária (kernel, firewall, server) + validações reais 
 FINDINGS.md    avaliação ground-truth (provado / refutado), reproduzível
 reports/       veredito de imunidade (APT war-game)
 ```
-
-> Camadas legadas (`bioma_orchestrator/`, `bioma_kernel/`) permanecem só para reproduzir o
-> `FINDINGS.md`; `bioma_micro` + `bioma` são o produto.
 
 ## Licença
 

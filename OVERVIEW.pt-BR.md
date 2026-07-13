@@ -50,7 +50,7 @@ Todo número abaixo foi medido neste projeto, não afirmado. Os scripts estão n
   entrada **47.890 → 2.022 tokens** (93,8% médio/rodada, 97,5% na rodada 16), latência da
   apoptose **~1,6μs** média, **0/16** erros de despacho, custo total da sessão **$0.0191**.
 
-### Resiliência — o kernel Rust (`bioma_kernel_loadtest.py`)
+### Resiliência — o kernel Rust (bench de pesquisa arquivado)
 - **~2M sinais/s** a **~5μs de latência média**.
 - **1k → 10k agentes concorrentes (10× de carga):** latência média 4,5μs → 5,0μs (**1,1×**),
   p99 21μs → 15μs — **limitada, sub-linear** sob carga.
