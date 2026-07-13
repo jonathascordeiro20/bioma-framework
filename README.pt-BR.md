@@ -95,6 +95,9 @@ reports/       veredito de imunidade (APT war-game)
 > Camadas legadas (`bioma_orchestrator/`, `bioma_kernel/`) permanecem só para reproduzir o
 > `FINDINGS.md`; `bioma_micro` + `bioma` são o produto.
 
-## Licença
+## Licença & edições
 
-MIT.
+Open-core. A **edição Community** (este repo — kernel, firewall, tudo que os benchmarks
+provam) é **MIT** ([`LICENSE`](LICENSE)). Uma **edição Enterprise** separada (ferramentas
+soberanas/air-gapped, conformidade, admin, SLA) está disponível sob licença comercial —
+veja [`EDITIONS.pt-BR.md`](EDITIONS.pt-BR.md).

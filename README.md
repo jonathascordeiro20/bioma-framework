@@ -96,6 +96,9 @@ reports/       immunity verdict (APT war-game)
 > Legacy layers (`bioma_orchestrator/`, `bioma_kernel/`) remain only to reproduce
 > `FINDINGS.md`; `bioma_micro` + `bioma` are the product.
 
-## License
+## License & editions
 
-MIT.
+Open-core. The **Community edition** (this repo — kernel, firewall, everything the
+benchmarks prove) is **MIT** ([`LICENSE`](LICENSE)). A separate **Enterprise edition**
+(sovereign/air-gapped tooling, compliance, admin, SLA) is available under a commercial
+license — see [`EDITIONS.md`](EDITIONS.md).
