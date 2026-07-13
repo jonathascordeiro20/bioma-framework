@@ -17,8 +17,9 @@ faster and safer, in-process, before your prompt ever leaves the machine:
 Google, OpenAI** — or anything — with *your* SDK.
 
 > **New here?** [`OVERVIEW.md`](OVERVIEW.md) explains what B.I.O.M.A. is, the pain it
-> attacks, and the real benchmarks as proof. Every claim is measured and audited in
-> [`FINDINGS.md`](FINDINGS.md), including what we tested and **refuted** (multi-LLM
+> attacks, and the real benchmarks as proof. For enterprise & government positioning,
+> see [`ESCOPO_COMERCIAL.md`](ESCOPO_COMERCIAL.md). Every claim is measured and audited
+> in [`FINDINGS.md`](FINDINGS.md), including what we tested and **refuted** (multi-LLM
 > "mitosis" does not improve quality — it is not part of the product).
 
 ## Use it as a library (any provider)
