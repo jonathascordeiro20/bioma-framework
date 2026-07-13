@@ -28,7 +28,8 @@ Google, OpenAI** — or anything — with *your* SDK.
 > attacks, and the real benchmarks as proof. For enterprise & government positioning,
 > see [`COMMERCIAL_SCOPE.md`](COMMERCIAL_SCOPE.md) (EN) /
 > [`ESCOPO_COMERCIAL.md`](ESCOPO_COMERCIAL.md) (PT); Brazil competitive map in
-> [`MARKET_BRAZIL.md`](MARKET_BRAZIL.md); framework mapping (OWASP/NIST/ATLAS/ISO 42001) in
+> [`MARKET_BRAZIL.md`](MARKET_BRAZIL.md); Brazil government sales playbook (CPSI + LGPD/CNJ 615) in
+> [`GOVERNMENT_BRAZIL.md`](GOVERNMENT_BRAZIL.md); framework mapping (OWASP/NIST/ATLAS/ISO 42001) in
 > [`COMPLIANCE_MAPPING.md`](COMPLIANCE_MAPPING.md); ROI & cost model in
 > [`BUSINESS_CASE.md`](BUSINESS_CASE.md); step-by-step deployment (local & online
 > providers) in [`IMPLEMENTATION.md`](IMPLEMENTATION.md). Every claim is measured and audited
