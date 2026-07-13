@@ -2,14 +2,16 @@
 
 > Ground truth. B.I.O.M.A. hardens the **payload**, not the model — so the gains are **model-agnostic** and identical whether the LLM is online (API) or offline (on-prem).
 
-**Model-agnostic efficiency (measured on the payload):** input context **1,069 → 63 tokens (−94%)** · kernel 0.9μs · secret redacted from outbound.
+**Model-agnostic efficiency (measured on the payload):** input context **1,069 → 63 tokens (−94%)** · kernel 0.8μs · secret redacted from outbound.
 
 ## Online — real dispatch (baseline vs B.I.O.M.A.)
 
 | Model (online) | in_tok base→BIOMA | reduction | cost base→BIOMA | secret → provider |
 | :--- | :---: | :---: | :---: | :---: |
-| GPT-4o | 1606→79 | −95% | $0.0043→$0.0004 | baseline **True** → BIOMA **False** |
-| Claude Opus 4.8 | 2489→123 | −95% | $0.0134→$0.0016 | baseline **True** → BIOMA **False** |
+| GPT-5.5 | 1605→78 | −95% | $0.0102→$0.0027 | baseline **True** → BIOMA **False** |
+| Claude Sonnet 5 | 2489→123 | −95% | $0.0058→$0.0007 | baseline **True** → BIOMA **False** |
+| Gemini 3.1 Pro | 1836→82 | −96% | $0.0052→$0.0017 | baseline **True** → BIOMA **False** |
+| Grok 4.5 | 1806→280 | −84% | $0.0053→$0.0021 | baseline **True** → BIOMA **False** |
 
 ## Offline — local / on-prem model (no network)
 

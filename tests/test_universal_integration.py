@@ -43,11 +43,14 @@ from bioma_orchestrator.openrouter_async import AsyncOpenRouterProvider  # noqa:
 
 SECRET = "MASTER-ENC-KEY-9f2c8b1d-CLASSIFIED"   # fake, local — never real
 
-# Online models to confirm empirically (report prompt_tokens via OpenRouter).
-ONLINE = [("openai/gpt-4o", "GPT-4o"), ("anthropic/claude-opus-4.8", "Claude Opus 4.8")]
+# Newest frontier models per provider — confirm empirically (real prompt_tokens).
+ONLINE = [("openai/gpt-5.5", "GPT-5.5"),
+          ("anthropic/claude-sonnet-5", "Claude Sonnet 5"),
+          ("google/gemini-3.1-pro-preview", "Gemini 3.1 Pro"),
+          ("x-ai/grok-4.5", "Grok 4.5")]
 # Illustrative list prices (USD / 1M input tokens) for the cost-projection table.
-IN_PRICE = {"GPT-4o": 2.5, "Claude Opus 4.8": 15.0, "Gemini 2.5 Pro": 1.25,
-            "Llama-3.3-70B (on-prem)": 0.0, "Grok-4.3": 3.0}
+IN_PRICE = {"GPT-5.5": 5.0, "Claude Sonnet 5": 3.0, "Gemini 3.1 Pro": 2.0,
+            "Grok 4.5": 3.0, "Llama-3.3-70B (on-prem)": 0.0}
 
 
 def workload() -> list[dict]:
@@ -108,8 +111,8 @@ async def main() -> int:
         raw = "\n".join(str(m["content"]) for m in hist)          # baseline: full context (leaks secret)
         print("PART 2 · ONLINE confirmation — real dispatch (baseline vs B.I.O.M.A.)")
         for slug, name in ONLINE:
-            base = await prov.complete(prompt=f"{raw}\n\n{QUERY}", model=slug, max_tokens=40)
-            bio = await prov.complete(prompt=h.prompt, model=slug, system=h.system, max_tokens=40)
+            base = await prov.complete(prompt=f"{raw}\n\n{QUERY}", model=slug, max_tokens=128)
+            bio = await prov.complete(prompt=h.prompt, model=slug, system=h.system, max_tokens=128)
             base_leaks = SECRET in (f"{raw}\n\n{QUERY}")
             online_rows.append((name, base.in_tokens, bio.in_tokens, base.cost_usd, bio.cost_usd, base_leaks))
             dr = (1 - bio.in_tokens / base.in_tokens) if base.in_tokens else 0.0
