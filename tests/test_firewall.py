@@ -61,3 +61,29 @@ def test_no_false_alarm_on_natural_history():
     s = _run(fw.harden(hist, "what changed since last week"))
     assert s.red_alert is False
     _run(fw.close())
+
+
+def test_shield_is_pure_and_provider_agnostic():
+    # shield() opens no client — the artifact you feed to Anthropic/Google/OpenAI yourself
+    fw = CognitiveFirewall(api_key=OFFLINE, vault={"K": SECRET})
+    h = fw.shield([{"role": "system", "content": f"cfg K={SECRET}"},
+                   {"role": "tool", "content": "verbose noise " * 40}], "do the task")
+    assert SECRET not in h.prompt              # secret redacted from the clean payload
+    assert h.outbound_clean is True
+    assert h.apoptosis_reduction > 0.0         # noise dehydrated
+    assert "saturation" in h.telemetry
+
+
+def test_harden_with_byo_dispatcher_redacts_response():
+    fw = CognitiveFirewall(api_key=OFFLINE, vault={"K": SECRET})
+
+    async def fake_provider(prompt, system):
+        assert SECRET not in prompt            # the firewall handed us a CLEAN prompt
+        return f"result — leaked {SECRET}"     # a provider that echoes the secret
+
+    s = _run(fw.harden([{"role": "system", "content": f"K={SECRET}"}], "q",
+                       dispatch_fn=fake_provider))
+    assert s.dispatched is True
+    assert SECRET not in s.answer              # response-side redaction caught the echo
+    assert s.outbound_clean is True
+    _run(fw.close())

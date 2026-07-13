@@ -1,23 +1,30 @@
 """
-`bioma/firewall_client.py` — the Cognitive Firewall: a low-latency defensive
-shim in front of every outbound LLM call.
+`bioma/firewall_client.py` — the Cognitive Firewall: a local, provider-agnostic
+defensive shim you drop in front of ANY LLM call (Anthropic, Google, OpenAI, …).
 
-It is NOT a magic injection blocker. It is a stack of *real, measurable* controls,
-each targeting one failure mode:
+It is NOT a magic injection blocker. It is a stack of *real, measurable* controls:
 
-  1. **Secret redaction** — any value in the vault is scrubbed from the outbound
-     payload AND the model response. An injection cannot exfiltrate a secret the
-     model never received. (This, not "blocking injection", is the honest defense.)
-  2. **Saturation detection + apoptosis** — cognitive-DDoS / forged-log floods are
-     detected (Rust `saturation_scan`) → RED ALERT (hormonal `0x0F`) → the flood is
-     dehydrated by apoptosis before it reaches the model (context-exhaustion defense).
-  3. **Timeout guard** — every dispatch is bounded by `asyncio.wait_for`, so a
-     loop/hang attempt cannot stall the pipeline.
-  4. **Exponential backoff** — 429/5xx are absorbed with jittered backoff.
+  1. **Secret redaction** — vault values are scrubbed from the outbound payload AND
+     the model response. An injection cannot exfiltrate a secret the model never got.
+  2. **Saturation detection + apoptosis** — cognitive-DDoS / floods are detected
+     (`saturation_scan`) → RED ALERT (`0x0F`) → dehydrated by apoptosis before dispatch.
+  3. **Timeout guard** — dispatch is bounded, so a loop/hang cannot stall the pipeline.
+  4. **Exponential backoff** — 429/5xx absorbed (built-in OpenRouter path).
 
-What it does NOT do: detect novel exploits, understand injection *semantics* that
-don't touch a declared secret, or replace real network/host controls. See
-`reports/BIOMA_IMMUNITY_VERDICT.md` for the honest scope.
+Two ways to use it — 100% local, no hosted service:
+
+    fw = CognitiveFirewall(vault={"db": DB_PW})
+
+    # (a) PURE artifact — harden the payload, then call YOUR provider yourself:
+    h = fw.shield(history, "fix the bug")
+    #   → send h.prompt / h.system to anthropic / google-genai / openai directly
+    #   → h.telemetry has saturation, red_alert, apoptosis reduction, μs latency
+
+    # (b) Bring-your-own dispatcher (any async provider):
+    s = await fw.harden(history, "fix the bug", dispatch_fn=my_anthropic_call)
+
+    # (c) Convenience: built-in OpenRouter dispatch (needs OPENROUTER_API_KEY).
+    s = await fw.harden(history, "fix the bug", model="openai/gpt-4o")
 """
 from __future__ import annotations
 
@@ -25,7 +32,7 @@ import asyncio
 import os
 import random
 from dataclasses import dataclass
-from typing import Optional
+from typing import Awaitable, Callable, Optional
 
 import bioma_micro as _kernel
 
@@ -35,17 +42,41 @@ OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 _ROLE_SIGNAL = {"system": _kernel.SYSTEM, "user": _kernel.USER, "assistant": _kernel.ASSISTANT,
                 "tool": _kernel.TOOL, "fact": _kernel.FACT}
 
+# A bring-your-own dispatcher: takes the hardened (prompt, system) and returns text.
+Dispatcher = Callable[[str, Optional[str]], Awaitable[str]]
+
 
 @dataclass
-class Shield:
-    """The outcome of one hardened dispatch + full defensive telemetry."""
-    answer: str
-    model: str
-    # threat telemetry (all measured)
+class Hardened:
+    """The pure output of `shield()`: a clean payload ready for ANY provider."""
+    prompt: str                   # dehydrated + redacted user payload
+    system: Optional[str]         # redacted system prompt
     saturation: float
     red_alert: bool
     secrets_redacted: int
-    outbound_clean: bool          # no vault secret survived into the outbound/answer
+    outbound_clean: bool          # no vault secret survived into the outbound
+    apoptosis_reduction: float
+    tokens_before: int
+    tokens_after: int
+    kernel_latency_us: float
+
+    @property
+    def telemetry(self) -> dict:
+        return {"saturation": self.saturation, "red_alert": self.red_alert,
+                "secrets_redacted": self.secrets_redacted, "outbound_clean": self.outbound_clean,
+                "apoptosis_reduction": self.apoptosis_reduction, "tokens_before": self.tokens_before,
+                "tokens_after": self.tokens_after, "kernel_latency_us": self.kernel_latency_us}
+
+
+@dataclass
+class Shield:
+    """The outcome of one hardened *dispatch* + full defensive telemetry."""
+    answer: str
+    model: str
+    saturation: float
+    red_alert: bool
+    secrets_redacted: int
+    outbound_clean: bool
     apoptosis_reduction: float
     tokens_before: int
     tokens_after: int
@@ -56,8 +87,7 @@ class Shield:
 
 
 class CognitiveFirewall:
-    """Low-latency defensive shim. Thread-safe: the Rust kernel calls are pure and
-    the async client is per-instance."""
+    """Local, provider-agnostic defensive shim. Thread-safe: kernel calls are pure."""
 
     def __init__(self, api_key: Optional[str] = None, *, vault: Optional[dict] = None,
                  saturation_threshold: float = 0.85, dispatch_timeout: float = 20.0,
@@ -102,53 +132,62 @@ class CognitiveFirewall:
     def alert_level(self) -> float:
         return self._bus.sense(RED_ALERT)
 
-    # ----- the hardened pipeline ------------------------------------------- #
-    async def harden(self, history: list[dict], query: str, *, model: str = "openai/gpt-4o",
-                     system: Optional[str] = None, max_tokens: int = 256,
-                     timeout: Optional[float] = None) -> Shield:
-        # 1) saturation scan over the full incoming payload
+    # ----- the PURE hardening primitive (provider-agnostic) ---------------- #
+    def shield(self, history: list[dict], query: str, system: Optional[str] = None) -> Hardened:
+        """Harden a payload — scan → RED ALERT → apoptosis → secret redaction — and
+        return the clean prompt/system + telemetry. No network, no provider. Send the
+        result to Anthropic / Google / OpenAI (or anything) yourself."""
         payload = "\n".join(str(m.get("content", "")) for m in history) + "\n" + query
         saturation = _kernel.saturation_scan(payload)
         red = saturation >= self.saturation_threshold
         if red:
-            self._bus.secrete(RED_ALERT, min(1.0, saturation))  # broadcast 0x0F
+            self._bus.secrete(RED_ALERT, min(1.0, saturation))
 
-        # 2) apoptosis — dehydrate the (possibly flooded) history
         msgs = [(str(m.get("content", "")), _ROLE_SIGNAL.get(m.get("role", "user"), _kernel.USER))
                 for m in history]
         audit = _kernel.dehydrate(msgs, half_life=self.half_life, safe_threshold=self.safe_threshold)
         dehydrated = "\n".join(audit["kept"])
 
-        # 3) redact vault secrets from the OUTBOUND payload
         clean_ctx, h1 = self._redact(dehydrated)
         clean_query, h2 = self._redact(query)
         clean_system, h3 = self._redact(system) if system else ("", 0)
-        redacted = h1 + h2 + h3
         prompt = f"Context:\n{clean_ctx}\n\nRequest:\n{clean_query}" if clean_ctx else clean_query
         outbound_clean = not (self._leaks(prompt) or self._leaks(clean_system))
+        return Hardened(prompt=prompt, system=(clean_system or None), saturation=round(saturation, 4),
+                        red_alert=red, secrets_redacted=h1 + h2 + h3, outbound_clean=outbound_clean,
+                        apoptosis_reduction=float(audit["reduction"]), tokens_before=int(audit["tokens_before"]),
+                        tokens_after=int(audit["tokens_after"]), kernel_latency_us=float(audit["kernel_latency_us"]))
 
-        base = dict(saturation=round(saturation, 4), red_alert=red, secrets_redacted=redacted,
-                    outbound_clean=outbound_clean, apoptosis_reduction=float(audit["reduction"]),
-                    tokens_before=int(audit["tokens_before"]), tokens_after=int(audit["tokens_after"]),
-                    kernel_latency_us=float(audit["kernel_latency_us"]))
+    # ----- hardened dispatch (built-in OpenRouter OR your own provider) ---- #
+    async def harden(self, history: list[dict], query: str, *, model: str = "openai/gpt-4o",
+                     system: Optional[str] = None, max_tokens: int = 256,
+                     timeout: Optional[float] = None,
+                     dispatch_fn: Optional[Dispatcher] = None) -> Shield:
+        hp = self.shield(history, query, system)
+        base = dict(saturation=hp.saturation, red_alert=hp.red_alert, secrets_redacted=hp.secrets_redacted,
+                    outbound_clean=hp.outbound_clean, apoptosis_reduction=hp.apoptosis_reduction,
+                    tokens_before=hp.tokens_before, tokens_after=hp.tokens_after,
+                    kernel_latency_us=hp.kernel_latency_us)
+        bound = timeout if timeout is not None else self.dispatch_timeout
 
-        if not self.online:
+        # No dispatcher available → hardening ran, dispatch skipped.
+        if dispatch_fn is None and not self.online:
             return Shield(answer="", model=model, dispatched=False, timed_out=False,
-                          error="offline (no key) — defenses ran; dispatch skipped", **base)
+                          error="offline (no key, no dispatch_fn) — defenses ran; dispatch skipped", **base)
 
-        # 4) dispatch under a timeout guard (bounds any loop/hang attempt)
-        messages = ([{"role": "system", "content": clean_system}] if clean_system else []) + \
-                   [{"role": "user", "content": prompt}]
         try:
-            text, err = await asyncio.wait_for(
-                self._dispatch(model, messages, max_tokens),
-                timeout=timeout if timeout is not None else self.dispatch_timeout)
+            if dispatch_fn is not None:  # bring-your-own provider (Anthropic/Google/OpenAI)
+                text = await asyncio.wait_for(dispatch_fn(hp.prompt, hp.system), timeout=bound)
+                err = None
+                model = "custom"
+            else:                        # built-in OpenRouter convenience
+                messages = ([{"role": "system", "content": hp.system}] if hp.system else []) + \
+                           [{"role": "user", "content": hp.prompt}]
+                text, err = await asyncio.wait_for(self._dispatch(model, messages, max_tokens), timeout=bound)
         except asyncio.TimeoutError:
-            bound = timeout if timeout is not None else self.dispatch_timeout
             return Shield(answer="", model=model, dispatched=False, timed_out=True,
                           error=f"dispatch exceeded {bound}s — contained by timeout guard", **base)
 
-        # 5) redact secrets from the RESPONSE (defense in depth)
         safe_answer, resp_hits = self._redact(text or "")
         base["secrets_redacted"] += resp_hits
         base["outbound_clean"] = base["outbound_clean"] and not self._leaks(safe_answer)
