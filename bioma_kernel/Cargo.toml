@@ -3,7 +3,7 @@ name = "bioma_kernel"
 version = "0.1.0"
 edition = "2021"
 description = "B.I.O.M.A. Rust kernel — microsecond hormonal bus + memory apoptosis (PyO3)."
-license = "MIT"
+license = "LicenseRef-FSL-1.1-MIT"
 
 [lib]
 name = "bioma_kernel"

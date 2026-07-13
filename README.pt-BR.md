@@ -97,7 +97,9 @@ reports/       veredito de imunidade (APT war-game)
 
 ## Licença & edições
 
-Open-core. A **edição Community** (este repo — kernel, firewall, tudo que os benchmarks
-provam) é **MIT** ([`LICENSE`](LICENSE)). Uma **edição Enterprise** separada (ferramentas
-soberanas/air-gapped, conformidade, admin, SLA) está disponível sob licença comercial —
-veja [`EDITIONS.pt-BR.md`](EDITIONS.pt-BR.md).
+Fair-source. A **edição Community** (este repo — kernel, firewall, tudo que os benchmarks
+provam) é source-available sob a **Functional Source License (FSL-1.1-MIT)**
+([`LICENSE`](LICENSE)) — leia, execute, construa em cima; o único limite é reempacotá-la como
+produto concorrente, e cada release vira MIT após dois anos. Uma **edição Enterprise** separada
+(ferramentas soberanas/air-gapped, conformidade, admin, SLA) está disponível sob licença
+comercial — veja [`EDITIONS.pt-BR.md`](EDITIONS.pt-BR.md).

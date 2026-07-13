@@ -6,7 +6,7 @@ build-backend = "maturin"
 name = "bioma_micro"
 description = "B.I.O.M.A. Micro-Kernel — lock-free hormonal bus + autonomous context apoptosis."
 requires-python = ">=3.8"
-license = { text = "MIT" }
+license = { text = "LicenseRef-FSL-1.1-MIT" }
 classifiers = [
     "Programming Language :: Rust",
     "Programming Language :: Python :: Implementation :: CPython",

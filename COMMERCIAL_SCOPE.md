@@ -111,7 +111,7 @@ Selling to a government CISO requires declaring scope. B.I.O.M.A. does **not**:
 - **Sovereign by design:** local library (Rust + Python), embeddable in any architecture;
   in-process; **nothing leaves without passing redaction/apoptosis**.
 - **Provider-agnostic:** Anthropic, Google, OpenAI or an on-prem model — no lock-in.
-- **Auditable:** open core (MIT), **reproducible** benchmarks (`FINDINGS.md`), 20 unit tests
+- **Auditable:** source-available core (FSL-1.1-MIT), **reproducible** benchmarks (`FINDINGS.md`), 20 unit tests
   in CI, and an honest security verdict (`reports/BIOMA_IMMUNITY_VERDICT.md`).
 - **Air-gap friendly:** apoptosis + firewall run offline.
 

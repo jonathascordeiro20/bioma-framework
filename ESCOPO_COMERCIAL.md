@@ -115,7 +115,7 @@ Vender a um CISO de governo exige declarar o escopo. O B.I.O.M.A. **não**:
 - **Soberano por design:** biblioteca local (Rust + Python), embutível em qualquer arquitetura;
   processamento in-process; **nada sai sem passar pela redação/apoptose**.
 - **Provider-agnóstico:** Anthropic, Google, OpenAI ou modelo on-prem — sem lock-in.
-- **Auditável:** núcleo aberto (MIT), benchmarks **reproduzíveis** (`FINDINGS.md`), 20 testes
+- **Auditável:** núcleo source-available (FSL-1.1-MIT), benchmarks **reproduzíveis** (`FINDINGS.md`), 20 testes
   unitários em CI, e um veredito de segurança honesto (`reports/BIOMA_IMMUNITY_VERDICT.md`).
 - **Air-gap friendly:** apoptose + firewall operam offline.
 
