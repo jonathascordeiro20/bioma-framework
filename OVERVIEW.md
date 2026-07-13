@@ -1,5 +1,7 @@
 # B.I.O.M.A. — What it is, what it solves, and the proof
 
+**🌐 English · [Português](OVERVIEW.pt-BR.md)**
+
 ## What B.I.O.M.A. is (now)
 
 B.I.O.M.A. is a **local, provider-agnostic efficiency & security micro-kernel for

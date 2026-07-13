@@ -1,5 +1,7 @@
 # B.I.O.M.A. — Empirical Findings (ground-truth evaluation)
 
+**🌐 English · [Português](FINDINGS.pt-BR.md)**
+
 > Honest, reproducible evaluation of every B.I.O.M.A. mechanism against real data.
 > Written to survive technical due diligence: it states what is **proven**, what is
 > **refuted**, and what remains a **design goal**. Numbers below are measured, not

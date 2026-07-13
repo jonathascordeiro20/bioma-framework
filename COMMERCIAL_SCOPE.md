@@ -1,5 +1,7 @@
 # B.I.O.M.A. — Commercial Scope (Large Organizations & Government)
 
+**🌐 English · [Português](ESCOPO_COMERCIAL.md)**
+
 > B2B/B2G positioning. Every capability claim is **measured and reproducible**
 > (`FINDINGS.md`); every limit is **declared**. That honesty — not promises of
 > "immunity" — is what survives a security due diligence and earns institutional trust.

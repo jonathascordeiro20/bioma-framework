@@ -1,5 +1,7 @@
 # B.I.O.M.A. — Escopo Comercial (Grandes Organizações & Governo)
 
+**🌐 [English](COMMERCIAL_SCOPE.md) · Português**
+
 > Documento de posicionamento para venda B2B/B2G. Toda alegação de capacidade é
 > **medida e reproduzível** (`FINDINGS.md`); todo limite é **declarado**. É essa honestidade
 > — não promessas de "imunidade" — que sobrevive a uma due diligence de segurança e

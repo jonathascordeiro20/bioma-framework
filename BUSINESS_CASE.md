@@ -1,5 +1,7 @@
 # B.I.O.M.A. — Business Case & ROI
 
+**🌐 English · [Português](BUSINESS_CASE.pt-BR.md)**
+
 > **The reduction % is measured (ground truth). Prices are illustrative list prices,
 > clearly labeled.** So the *savings ratio* is real; the absolute $ scales with your
 > real prices and volumes.
