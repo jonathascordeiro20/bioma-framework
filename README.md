@@ -2,6 +2,12 @@
 
 **🌐 English · [Português](README.pt-BR.md)**
 
+[![CI](https://github.com/jonathascordeiro20/bioma-framework/actions/workflows/ci.yml/badge.svg)](https://github.com/jonathascordeiro20/bioma-framework/actions/workflows/ci.yml)
+[![License: FSL-1.1-MIT](https://img.shields.io/badge/license-FSL--1.1--MIT-blue.svg)](LICENSE)
+![Built with Rust + Python](https://img.shields.io/badge/built%20with-Rust%20%2B%20Python-orange.svg)
+![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)
+![Tokens saved: up to 97%](https://img.shields.io/badge/tokens%20saved-up%20to%2097%25-success.svg)
+
 **A local, provider-agnostic efficiency & security micro-kernel for LLM applications.**
 
 B.I.O.M.A. is a drop-in artifact — a lock-free Rust kernel (`bioma_micro`) plus a
