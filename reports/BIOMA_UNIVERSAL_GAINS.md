@@ -31,4 +31,4 @@
 | Cognitive DDoS | ✅ MITIGATED — flood 8,403→2 (saturation 0.9988) |
 | Code-injection loop | ✅ CONTAINED — timeout guard |
 
-> **Verdict.** Adding B.I.O.M.A. to any LLM — online or offline — yields the **same** efficiency (−94% input tokens) and the **same** security posture, because it operates on the payload. Only the absolute **$ saved scales with the model's price**. It is a model-agnostic layer of defense-in-depth — see `COMMERCIAL_SCOPE.md`.
+> **Verdict.** Adding B.I.O.M.A. to any LLM — online or offline — yields the **same** efficiency (−94% input tokens) and the **same** security posture, because it operates on the payload. Only the absolute **$ saved scales with the model's price**. It is a model-agnostic layer of defense-in-depth.

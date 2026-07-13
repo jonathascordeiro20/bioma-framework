@@ -37,4 +37,4 @@
 > **Veredito.** Adicionar o B.I.O.M.A. a qualquer LLM — online ou offline — dá a **mesma**
 > eficiência (−94% de tokens de entrada) e a **mesma** postura de segurança, porque ele opera
 > no payload. Só o **$ absoluto economizado escala com o preço do modelo**. É uma camada
-> model-agnóstica de defesa em profundidade — veja `ESCOPO_COMERCIAL.md`.
+> model-agnóstica de defesa em profundidade.

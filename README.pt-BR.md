@@ -25,15 +25,10 @@ barato, rápido e seguro, in-process, antes do seu prompt sair da máquina:
 OpenAI** — ou qualquer coisa — com o *seu* SDK.
 
 > **Novo por aqui?** [`OVERVIEW.pt-BR.md`](OVERVIEW.pt-BR.md) explica o que é o B.I.O.M.A., a
-> dor que ele ataca, e os benchmarks reais como prova. Para posicionamento corporativo e
-> governamental, veja [`ESCOPO_COMERCIAL.md`](ESCOPO_COMERCIAL.md); mapa competitivo Brasil em
-> [`MARKET_BRAZIL.pt-BR.md`](MARKET_BRAZIL.pt-BR.md); playbook de venda ao governo BR (CPSI + LGPD/CNJ 615) em
-> [`GOVERNMENT_BRAZIL.pt-BR.md`](GOVERNMENT_BRAZIL.pt-BR.md); mapeamento de frameworks (OWASP/NIST/ATLAS/ISO 42001) em
-> [`COMPLIANCE_MAPPING.pt-BR.md`](COMPLIANCE_MAPPING.pt-BR.md); ROI e modelo de custo em
-> [`BUSINESS_CASE.pt-BR.md`](BUSINESS_CASE.pt-BR.md); implantação passo a passo (modelos locais
-> e online) em [`IMPLEMENTATION.pt-BR.md`](IMPLEMENTATION.pt-BR.md). Toda alegação é medida e auditada em
-> [`FINDINGS.pt-BR.md`](FINDINGS.pt-BR.md), inclusive o que testamos e **refutamos** (a
-> "mitose" multi-LLM não melhora qualidade — não faz parte do produto).
+> dor que ele ataca, e os benchmarks reais como prova. Implantação passo a passo (modelos locais
+> e online) em [`IMPLEMENTATION.pt-BR.md`](IMPLEMENTATION.pt-BR.md). Toda alegação é medida e
+> auditada em [`FINDINGS.pt-BR.md`](FINDINGS.pt-BR.md), inclusive o que testamos e **refutamos**
+> (a "mitose" multi-LLM não melhora qualidade — não faz parte do produto).
 
 ## Use como biblioteca (qualquer provedor)
 
@@ -104,11 +99,8 @@ reports/       veredito de imunidade (APT war-game)
 > Camadas legadas (`bioma_orchestrator/`, `bioma_kernel/`) permanecem só para reproduzir o
 > `FINDINGS.md`; `bioma_micro` + `bioma` são o produto.
 
-## Licença & edições
+## Licença
 
-Fair-source. A **edição Community** (este repo — kernel, firewall, tudo que os benchmarks
-provam) é source-available sob a **Functional Source License (FSL-1.1-MIT)**
-([`LICENSE`](LICENSE)) — leia, execute, construa em cima; o único limite é reempacotá-la como
-produto concorrente, e cada release vira MIT após dois anos. Uma **edição Enterprise** separada
-(ferramentas soberanas/air-gapped, conformidade, admin, SLA) está disponível sob licença
-comercial — veja [`EDITIONS.pt-BR.md`](EDITIONS.pt-BR.md).
+Fair-source sob a **Functional Source License (FSL-1.1-MIT)** ([`LICENSE`](LICENSE)):
+leia, execute e construa em cima para qualquer finalidade não-concorrente. O único limite é
+reempacotá-la como produto concorrente, e cada release vira MIT dois anos após sua data.

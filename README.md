@@ -25,15 +25,9 @@ faster and safer, in-process, before your prompt ever leaves the machine:
 Google, OpenAI** — or anything — with *your* SDK.
 
 > **New here?** [`OVERVIEW.md`](OVERVIEW.md) explains what B.I.O.M.A. is, the pain it
-> attacks, and the real benchmarks as proof. For enterprise & government positioning,
-> see [`COMMERCIAL_SCOPE.md`](COMMERCIAL_SCOPE.md) (EN) /
-> [`ESCOPO_COMERCIAL.md`](ESCOPO_COMERCIAL.md) (PT); Brazil competitive map in
-> [`MARKET_BRAZIL.md`](MARKET_BRAZIL.md); Brazil government sales playbook (CPSI + LGPD/CNJ 615) in
-> [`GOVERNMENT_BRAZIL.md`](GOVERNMENT_BRAZIL.md); framework mapping (OWASP/NIST/ATLAS/ISO 42001) in
-> [`COMPLIANCE_MAPPING.md`](COMPLIANCE_MAPPING.md); ROI & cost model in
-> [`BUSINESS_CASE.md`](BUSINESS_CASE.md); step-by-step deployment (local & online
-> providers) in [`IMPLEMENTATION.md`](IMPLEMENTATION.md). Every claim is measured and audited
-> in [`FINDINGS.md`](FINDINGS.md), including what we tested and **refuted** (multi-LLM
+> attacks, and the real benchmarks as proof. Step-by-step deployment (local & online
+> providers) is in [`IMPLEMENTATION.md`](IMPLEMENTATION.md). Every claim is measured and
+> audited in [`FINDINGS.md`](FINDINGS.md), including what we tested and **refuted** (multi-LLM
 > "mitosis" does not improve quality — it is not part of the product).
 
 ## Use it as a library (any provider)
@@ -105,11 +99,8 @@ reports/       immunity verdict (APT war-game)
 > Legacy layers (`bioma_orchestrator/`, `bioma_kernel/`) remain only to reproduce
 > `FINDINGS.md`; `bioma_micro` + `bioma` are the product.
 
-## License & editions
+## License
 
-Fair-source. The **Community edition** (this repo — kernel, firewall, everything the
-benchmarks prove) is source-available under the **Functional Source License (FSL-1.1-MIT)**
-([`LICENSE`](LICENSE)) — read it, run it, build on it; the only limit is repackaging it as a
-competing product, and each release becomes MIT after two years. A separate **Enterprise
-edition** (sovereign/air-gapped tooling, compliance, admin, SLA) is available under a
-commercial license — see [`EDITIONS.md`](EDITIONS.md).
+Fair-source under the **Functional Source License (FSL-1.1-MIT)** ([`LICENSE`](LICENSE)):
+read it, run it, and build on it for any non-competing purpose. The only limit is repackaging
+it as a competing product, and each release automatically becomes MIT two years after its date.
