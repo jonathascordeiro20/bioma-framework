@@ -158,6 +158,7 @@ async def main() -> int:
     os.makedirs(os.path.join(_ROOT, "reports"), exist_ok=True)
     lines = []
     lines.append("# B.I.O.M.A. — Universal Integration Gains (any LLM · online & offline)\n")
+    lines.append("**🌐 English · [Português](BIOMA_UNIVERSAL_GAINS.pt-BR.md)**\n")
     lines.append("> Ground truth. B.I.O.M.A. hardens the **payload**, not the model — so the gains are "
                  "**model-agnostic** and identical whether the LLM is online (API) or offline (on-prem).\n")
     lines.append(f"**Model-agnostic efficiency (measured on the payload):** input context "

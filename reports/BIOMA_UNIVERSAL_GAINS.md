@@ -1,5 +1,7 @@
 # B.I.O.M.A. — Universal Integration Gains (any LLM · online & offline)
 
+**🌐 English · [Português](BIOMA_UNIVERSAL_GAINS.pt-BR.md)**
+
 > Ground truth. B.I.O.M.A. hardens the **payload**, not the model — so the gains are **model-agnostic** and identical whether the LLM is online (API) or offline (on-prem).
 
 **Model-agnostic efficiency (measured on the payload):** input context **1,069 → 63 tokens (−94%)** · kernel 0.8μs · secret redacted from outbound.
