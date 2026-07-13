@@ -27,7 +27,8 @@ Google, OpenAI** — or anything — with *your* SDK.
 > **New here?** [`OVERVIEW.md`](OVERVIEW.md) explains what B.I.O.M.A. is, the pain it
 > attacks, and the real benchmarks as proof. For enterprise & government positioning,
 > see [`COMMERCIAL_SCOPE.md`](COMMERCIAL_SCOPE.md) (EN) /
-> [`ESCOPO_COMERCIAL.md`](ESCOPO_COMERCIAL.md) (PT); ROI & cost model in
+> [`ESCOPO_COMERCIAL.md`](ESCOPO_COMERCIAL.md) (PT); Brazil competitive map in
+> [`MARKET_BRAZIL.md`](MARKET_BRAZIL.md); ROI & cost model in
 > [`BUSINESS_CASE.md`](BUSINESS_CASE.md); step-by-step deployment (local & online
 > providers) in [`IMPLEMENTATION.md`](IMPLEMENTATION.md). Every claim is measured and audited
 > in [`FINDINGS.md`](FINDINGS.md), including what we tested and **refuted** (multi-LLM
