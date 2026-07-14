@@ -10,6 +10,11 @@
 
 **Um micro-kernel local, provider-agnóstico, de eficiência e segurança para aplicações de LLM.**
 
+<p align="center">
+  <img src="assets/bioma-concept-map.png" width="760"
+       alt="Mapa conceitual do B.I.O.M.A.: o que é, os três mecanismos (apoptose de contexto, firewall cognitivo, barramento hormonal), o que ele realmente gera, e por que a soberania depende de onde o modelo roda.">
+</p>
+
 O B.I.O.M.A. é um artefato plugável — um kernel em Rust lock-free (`bioma_micro`) mais uma
 fina camada Python — que você embute em *qualquer* projeto ou arquitetura que fale com um
 LLM. Ele não tenta deixar o modelo "mais inteligente". Ele torna o *processamento* mais
