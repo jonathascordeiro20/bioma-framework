@@ -137,3 +137,27 @@ def test_no_history_passthrough():
     msgs = [{"role": "user", "content": "hi"}]
     survivors, audit = dehydrate_messages(msgs, half_life=6.0, safe_threshold=0.35)
     assert survivors == msgs and audit["reduction"] == 0.0
+
+
+def test_fact_in_list_content_survives():
+    # regression: a durable block carrying cache_control (list content) must be
+    # recognized as FACT and survive, not fall through to USER and get purged.
+    durable = {"role": "user", "content": [
+        {"type": "text", "text": "FACT: the release tag is v9.2.1",
+         "cache_control": {"type": "ephemeral"}}]}
+    msgs = [{"role": "system", "content": "sys"}, durable]
+    for i in range(20):
+        msgs += [{"role": "assistant", "content": f"noise {i} " * 40},
+                 {"role": "user", "content": f"step {i}"}]
+    msgs.append({"role": "user", "content": "What is the release tag?"})
+    survivors, _ = dehydrate_messages(msgs, half_life=6.0, safe_threshold=0.35)
+    assert durable in survivors  # the cache_control block survived apoptosis
+
+
+def test_cache_control_block_treated_as_durable():
+    block = {"role": "user", "content": [
+        {"type": "text", "text": "big stable prefix",
+         "cache_control": {"type": "ephemeral"}}]}
+    from bioma.gateway import _unit_signal
+    import bioma_micro as k
+    assert _unit_signal([block]) == k.FACT

@@ -67,11 +67,29 @@ def _unit_text(msgs: list[dict]) -> str:
     return "\n".join(parts)
 
 
+def _first_text(content: Any) -> str:
+    """The leading text of a message, whether content is a str or a list of parts."""
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        for p in content:
+            if isinstance(p, dict) and p.get("type") == "text":
+                return p.get("text", "")
+    return ""
+
+
+def _has_cache_control(content: Any) -> bool:
+    return isinstance(content, list) and any(
+        isinstance(p, dict) and p.get("cache_control") for p in content)
+
+
 def _unit_signal(msgs: list[dict]) -> int:
     first = msgs[0]
     role = first.get("role", "user")
     content = first.get("content")
-    if isinstance(content, str) and content.lstrip().startswith("FACT:"):
+    # durable if explicitly FACT-tagged OR marked for provider caching (a
+    # cache_control breakpoint means the caller declared this block stable)
+    if _first_text(content).lstrip().startswith("FACT:") or _has_cache_control(content):
         return kernel.FACT
     if role == "system":
         return kernel.SYSTEM

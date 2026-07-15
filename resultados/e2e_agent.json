@@ -1,0 +1,16 @@
+{
+  "model": "anthropic/claude-sonnet-5",
+  "A": {
+    "in": 19574,
+    "out": 380,
+    "turns": 3,
+    "solved": true
+  },
+  "B": {
+    "in": 3169,
+    "out": 389,
+    "turns": 3,
+    "solved": true
+  },
+  "ts": "2026-07-15T16:02:41"
+}
