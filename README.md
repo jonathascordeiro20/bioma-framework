@@ -75,7 +75,7 @@ k.saturation_scan(payload)     # cognitive-DDoS score 0..1 (flood ≈ 1.0)
 | Vision context apoptosis (agent screenshot loops) | **6/6 parity, 100% correct at −56% real tokens** (−77% at 24 steps; dehydrated payload is O(1) in session length) — 3 vision models, probes rendered into the pixels | `tests/test_vision_quality_preservation.py` · `reports/BIOMA_VISION_QUALITY.md` |
 | Image distillation (keep-latest dedup + OCR + deterministic shape structure) | **100% answers at −74% tokens vs sending every image** — stale images become ~25–86-token text blocks; local VLM captions measured and rejected (label confabulation) | `tests/test_vision_distill.py` · `reports/BIOMA_VISION_DISTILL.md` |
 | Dev-workload cost benchmark (7 agent models, real OpenRouter usage & prices) | **−57% to −86% median cost at quality parity** — 126 real executions, paired replicas, failures reported first-page (Fable 5×T1 arm-B empty 3/3) | `tests/benchmark_dev_openrouter.py` · `resultados/relatorio.md` · `resultados/SIMULACAO_MERCADO.md` |
-| Drop-in gateway (OpenAI-compatible, cache-safe, tool-pair aware) | **−78% billed input tokens, answer intact** with only `base_url` changed — proven with the official OpenAI SDK on real models | `bioma/gateway.py` · `tests/test_gateway.py` · `tests/prove_gateway_dropin.py` |
+| Drop-in gateway (OpenAI **and Anthropic** surfaces, cache-safe, tool-pair aware) | **−78% (OpenAI) / −33% (Anthropic) billed input tokens, answer intact** with only `base_url` changed — proven with both official SDKs on real models; Claude Code speaks the Anthropic surface | `bioma/gateway.py` · `tests/test_gateway.py` · `tests/prove_gateway_dropin.py` · `tests/prove_anthropic_surface.py` |
 | Apoptosis × prompt caching (real Anthropic cache) | **−65% net cost after the cache discount** — the durable prefix hits the *same* cache in both arms; savings come from purging the never-cacheable middle | `tests/measure_cache_interaction.py` · `resultados/MEDICOES_GATEWAY.md` |
 | E2E real tool-calling agent (fixes a real bug to green pytest) | **−84% accumulated input tokens at task parity** on a long-running agent (−0% on a 3-turn task — apoptosis is a correct no-op with no dead weight) | `tests/e2e_agent_gateway.py` · `resultados/MEDICOES_GATEWAY.md` |
 | Hormonal bus | **~2M signals/s @ ~5μs**, bounded under 10× load | archived bench (research repo) |
@@ -84,8 +84,9 @@ k.saturation_scan(payload)     # cognitive-DDoS score 0..1 (flood ≈ 1.0)
 
 ## Drop-in gateway — apoptosis with zero code changes
 
-Point any OpenAI-compatible client's `base_url` at the gateway and every request
-gets context apoptosis transparently — no SDK swap, no prompt rewrite:
+Point any OpenAI-compatible **or Anthropic-compatible** client's `base_url` at
+the gateway and every request gets context apoptosis transparently — no SDK
+swap, no prompt rewrite:
 
 ```bash
 pip install fastapi "uvicorn[standard]" httpx
@@ -93,18 +94,28 @@ uvicorn bioma.gateway:app --port 8790
 ```
 
 ```python
+# OpenAI clients:
 from openai import OpenAI
-client = OpenAI(base_url="http://localhost:8790/v1", api_key="...")  # the only change
+client = OpenAI(base_url="http://localhost:8790/v1", api_key="...")   # only change
+
+# Anthropic clients (incl. Claude Code — set ANTHROPIC_BASE_URL):
+from anthropic import Anthropic
+client = Anthropic(base_url="http://localhost:8790", api_key="...")   # only change
 ```
 
-Proven drop-in (`tests/prove_gateway_dropin.py`, official OpenAI SDK, real
-models): billed input tokens **−78%** on Sonnet 5 / GLM-5.2 / Gemini 3.5 Flash,
-answer intact, streaming works, one audit line written per request. Design
-guarantees (each unit-tested in `tests/test_gateway.py`): the current query is
-never filtered; the surviving `system`+`FACT` prefix stays **byte-identical**
-across calls (prompt-cache-safe); `tool_call`/`tool` pairs survive or purge as a
-unit (never orphaned). The Anthropic `/v1/messages` surface (Claude Code E2E) is
-the next iteration.
+Both surfaces proven with the official SDKs on real models:
+- **OpenAI** (`tests/prove_gateway_dropin.py`): billed input **−78%** on Sonnet 5
+  / GLM-5.2 / Gemini 3.5 Flash, answer intact, streaming works.
+- **Anthropic `/v1/messages`** (`tests/prove_anthropic_surface.py`): billed input
+  **−33%** on Sonnet 5 / Opus 4.8, answer intact, streaming works — the protocol
+  Claude Code speaks, so `ANTHROPIC_BASE_URL` → the gateway just works.
+
+Design guarantees (each unit-tested in `tests/test_gateway.py`, 14 tests): the
+current query is never filtered; the surviving `system`+`FACT` prefix stays
+**byte-identical** across calls (prompt-cache-safe); tool-call/tool-result pairs
+survive or purge as a unit (never orphaned) — on both the OpenAI `tool` role and
+the Anthropic `tool_use`/`tool_result` block structure. Anthropic `system` is a
+top-level field, forwarded untouched (never purged).
 
 ## Frugal AI — the official KPI: energy per token
 

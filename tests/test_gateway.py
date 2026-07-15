@@ -18,14 +18,24 @@ _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
-from bioma.gateway import create_app, dehydrate_messages  # noqa: E402
+from bioma.gateway import (create_app, dehydrate_anthropic,  # noqa: E402
+                           dehydrate_messages)
 
 
 # ---- a mock upstream that echoes back the forwarded messages -------------- #
 def _mock_transport():
     def handler(request: httpx.Request) -> httpx.Response:
         sent = json.loads(request.content.decode())
-        return httpx.Response(200, json={
+        if request.url.path.endswith("/messages"):   # Anthropic surface
+            return httpx.Response(200, json={
+                "id": "msg-mock", "type": "message", "role": "assistant",
+                "model": sent.get("model", "?"),
+                "content": [{"type": "text", "text": "ok"}],
+                "stop_reason": "end_turn",
+                "usage": {"input_tokens": 10, "output_tokens": 2},
+                "_forwarded_messages": sent["messages"],
+                "_forwarded_system": sent.get("system")})
+        return httpx.Response(200, json={   # OpenAI surface
             "id": "cmpl-mock", "object": "chat.completion",
             "model": sent.get("model", "?"),
             "choices": [{"index": 0, "finish_reason": "stop",
@@ -161,3 +171,68 @@ def test_cache_control_block_treated_as_durable():
     from bioma.gateway import _unit_signal
     import bioma_micro as k
     assert _unit_signal([block]) == k.FACT
+
+
+# ---- Anthropic /v1/messages surface --------------------------------------- #
+def _anthropic_session(rounds: int = 15) -> list[dict]:
+    msgs = [{"role": "user", "content": [
+        {"type": "text", "text": "FACT: the release tag is v9.2.1",
+         "cache_control": {"type": "ephemeral"}}]}]
+    for i in range(rounds):
+        msgs += [
+            {"role": "assistant", "content": [
+                {"type": "tool_use", "id": f"t{i}", "name": "grep", "input": {}}]},
+            {"role": "user", "content": [
+                {"type": "tool_result", "tool_use_id": f"t{i}",
+                 "content": f"verbose result {i} " * 40}]},
+        ]
+    msgs.append({"role": "user", "content": "What is the release tag?"})
+    return msgs
+
+
+def test_anthropic_apoptosis_and_system_passthrough(client):
+    r = client.post("/v1/messages", json={
+        "model": "anthropic/claude-sonnet-5", "max_tokens": 50,
+        "system": "You are terse.", "messages": _anthropic_session()})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["_forwarded_system"] == "You are terse."          # system untouched
+    fwd = body["_forwarded_messages"]
+    assert len(fwd) < len(_anthropic_session())                   # apoptosis fired
+    assert fwd[-1]["content"] == "What is the release tag?"       # current query kept
+
+
+def test_anthropic_fact_survives(client):
+    r = client.post("/v1/messages", json={
+        "model": "m", "max_tokens": 50, "messages": _anthropic_session()})
+    fwd = r.json()["_forwarded_messages"]
+    txt = json.dumps(fwd)
+    assert "v9.2.1" in txt                                        # FACT block survived
+
+
+def test_anthropic_tool_pairs_never_orphan(client):
+    r = client.post("/v1/messages", json={
+        "model": "m", "max_tokens": 50, "messages": _anthropic_session()})
+    fwd = r.json()["_forwarded_messages"]
+    for i, m in enumerate(fwd):
+        # a tool_result must be immediately preceded by an assistant tool_use
+        if any(b.get("type") == "tool_result" for b in m.get("content", [])
+               if isinstance(b, dict)):
+            prev = fwd[i - 1]
+            assert i > 0 and any(b.get("type") == "tool_use"
+                                 for b in prev.get("content", []) if isinstance(b, dict))
+
+
+def test_anthropic_tool_result_tail_keeps_its_tool_use():
+    # if the session ends on a tool_result (user), its paired tool_use must survive
+    msgs = [{"role": "user", "content": "start"}]
+    for i in range(12):
+        msgs += [{"role": "assistant", "content": [
+                    {"type": "tool_use", "id": f"t{i}", "name": "x", "input": {}}]},
+                 {"role": "user", "content": [
+                    {"type": "tool_result", "tool_use_id": f"t{i}",
+                     "content": f"r{i} " * 30}]}]
+    survivors, _ = dehydrate_anthropic(msgs, half_life=6.0, safe_threshold=0.35)
+    assert survivors[-1]["content"][0]["type"] == "tool_result"
+    assert survivors[-2]["content"][0]["type"] == "tool_use"
+    assert survivors[-2]["content"][0]["id"] == survivors[-1]["content"][0]["tool_use_id"]

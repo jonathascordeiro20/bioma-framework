@@ -5,9 +5,10 @@
     uvicorn bioma.gateway:app --port 8790
     client = OpenAI(base_url="http://localhost:8790/v1", api_key=...)  # nothing else changes
 
-Surface (MVP): `POST /v1/chat/completions` (OpenAI format, streaming and
-non-streaming) + `GET /health`. The Anthropic `/v1/messages` surface (for
-Claude Code E2E) is the declared next iteration.
+Surfaces: `POST /v1/chat/completions` (OpenAI format) and `POST /v1/messages`
+(Anthropic Messages format — point Claude Code's `ANTHROPIC_BASE_URL` here),
+both streaming and non-streaming, + `GET /health`. Upstream OpenRouter accepts
+both formats natively, so either surface works with an OpenRouter key.
 
 Design guarantees (each one is unit-tested):
 
@@ -119,28 +120,84 @@ def _group_units(messages: list[dict]) -> list[list[dict]]:
     return units
 
 
+_EMPTY_AUDIT = {"tokens_before": 0, "tokens_after": 0, "reduction": 0.0,
+                "kernel_latency_us": 0.0, "blocks_purged": 0}
+
+
+def _apoptose_units(units: list[list[dict]], tail: list[dict], *,
+                    half_life: float, safe_threshold: float) -> tuple[list[dict], dict]:
+    """Run the kernel over pre-grouped history units and reassemble survivors + tail."""
+    msgs = [(f"[U{idx}]" + _unit_text(unit), _unit_signal(unit))
+            for idx, unit in enumerate(units)]
+    audit = kernel.dehydrate(msgs, half_life=half_life, safe_threshold=safe_threshold)
+    kept_idx = {int(k[2:k.index("]")]) for k in audit["kept"]}
+    survivors = [m for idx, unit in enumerate(units) if idx in kept_idx for m in unit]
+    return survivors + tail, dict(audit, kept=None)
+
+
 def dehydrate_messages(messages: list[dict], *, half_life: float,
                        safe_threshold: float) -> tuple[list[dict], dict]:
     """Deletion-only, order-preserving apoptosis over an OpenAI message list.
     Returns (surviving messages, audit dict). The LAST user message (and
     everything after it) is the current query — it never enters the filter."""
-    # split off the sacred tail: last user message onwards
     last_user = max((i for i, m in enumerate(messages) if m.get("role") == "user"),
                     default=-1)
     if last_user < 0:
-        return messages, {"tokens_before": 0, "tokens_after": 0, "reduction": 0.0,
-                          "kernel_latency_us": 0.0, "blocks_purged": 0}
+        return messages, dict(_EMPTY_AUDIT)
     history, tail = messages[:last_user], messages[last_user:]
+    return _apoptose_units(_group_units(history), tail,
+                           half_life=half_life, safe_threshold=safe_threshold)
 
-    units = _group_units(history)
-    msgs = []
-    for idx, unit in enumerate(units):
-        marker = f"[U{idx}]"
-        msgs.append((marker + _unit_text(unit), _unit_signal(unit)))
-    audit = kernel.dehydrate(msgs, half_life=half_life, safe_threshold=safe_threshold)
-    kept_idx = {int(k[2:k.index("]")]) for k in audit["kept"]}
-    survivors = [m for idx, unit in enumerate(units) if idx in kept_idx for m in unit]
-    return survivors + tail, dict(audit, kept=None)
+
+# --------------------------------------------------------------------------- #
+#  Anthropic Messages format
+# --------------------------------------------------------------------------- #
+def _blocks(content: Any) -> list[dict]:
+    return content if isinstance(content, list) else []
+
+
+def _has_block(msg: dict, block_type: str) -> bool:
+    return any(isinstance(b, dict) and b.get("type") == block_type
+               for b in _blocks(msg.get("content")))
+
+
+def _group_units_anthropic(history: list[dict]) -> list[list[dict]]:
+    """Group Anthropic messages into purge units, keeping tool pairs together:
+    an assistant message with `tool_use` blocks pairs with the FOLLOWING user
+    message carrying the matching `tool_result` blocks."""
+    units: list[list[dict]] = []
+    i = 0
+    while i < len(history):
+        m = history[i]
+        if (m.get("role") == "assistant" and _has_block(m, "tool_use")
+                and i + 1 < len(history) and _has_block(history[i + 1], "tool_result")):
+            units.append([m, history[i + 1]])
+            i += 2
+        else:
+            units.append([m])
+            i += 1
+    return units
+
+
+def dehydrate_anthropic(messages: list[dict], *, half_life: float,
+                        safe_threshold: float) -> tuple[list[dict], dict]:
+    """Apoptosis over Anthropic Messages. `system` is a separate top-level field
+    (always forwarded untouched, never purged) so it is not in `messages`. The
+    last user turn is the current query and is never filtered; if it carries a
+    `tool_result`, its matching assistant `tool_use` is kept with it (no orphan)."""
+    last_user = max((i for i, m in enumerate(messages) if m.get("role") == "user"),
+                    default=-1)
+    if last_user < 0:
+        return messages, dict(_EMPTY_AUDIT)
+    split = last_user
+    # if the sacred tail begins with a tool_result, keep its paired tool_use too
+    if (_has_block(messages[last_user], "tool_result") and last_user > 0
+            and messages[last_user - 1].get("role") == "assistant"
+            and _has_block(messages[last_user - 1], "tool_use")):
+        split = last_user - 1
+    history, tail = messages[:split], messages[split:]
+    return _apoptose_units(_group_units_anthropic(history), tail,
+                           half_life=half_life, safe_threshold=safe_threshold)
 
 
 # --------------------------------------------------------------------------- #
@@ -161,12 +218,52 @@ def create_app(*, upstream: Optional[str] = None,
     app.state.audit_path = os.environ.get("BIOMA_AUDIT_LOG", "bioma_gateway_audit.jsonl")
     app.state.client = httpx.AsyncClient(transport=transport, timeout=600.0)
 
-    def _auth_header(request: Request) -> dict[str, str]:
-        auth = request.headers.get("authorization")
-        if not auth:
+    def _auth_headers(request: Request) -> dict[str, str]:
+        """Forward the caller's auth (Bearer OR Anthropic x-api-key); fall back
+        to OPENROUTER_API_KEY. OpenRouter accepts both header styles."""
+        out: dict[str, str] = {}
+        if request.headers.get("authorization"):
+            out["Authorization"] = request.headers["authorization"]
+        if request.headers.get("x-api-key"):
+            out["x-api-key"] = request.headers["x-api-key"]
+        if request.headers.get("anthropic-version"):
+            out["anthropic-version"] = request.headers["anthropic-version"]
+        if not out:
             key = os.environ.get("OPENROUTER_API_KEY", "")
-            auth = f"Bearer {key}" if key else ""
-        return {"Authorization": auth} if auth else {}
+            if key:
+                out["Authorization"] = f"Bearer {key}"
+        return out
+
+    async def _forward(request: Request, path: str, body: dict, stream: bool,
+                       inject: Optional[dict] = None):
+        url = f"{app.state.upstream}{path}"
+        headers = {"Content-Type": "application/json", **_auth_headers(request)}
+        for h in ("http-referer", "x-title"):
+            if request.headers.get(h):
+                headers[h] = request.headers[h]
+        if stream:
+            req = app.state.client.build_request("POST", url, headers=headers, json=body)
+            upstream_resp = await app.state.client.send(req, stream=True)
+
+            async def pump():
+                try:
+                    async for chunk in upstream_resp.aiter_bytes():
+                        yield chunk
+                finally:
+                    await upstream_resp.aclose()
+
+            return StreamingResponse(
+                pump(), status_code=upstream_resp.status_code,
+                media_type=upstream_resp.headers.get("content-type", "text/event-stream"))
+
+        r = await app.state.client.post(url, headers=headers, json=body)
+        try:
+            payload = r.json()
+        except ValueError:
+            return JSONResponse({"error": "upstream returned non-JSON"}, status_code=502)
+        if inject is not None and isinstance(payload, dict):
+            payload["bioma"] = inject
+        return JSONResponse(payload, status_code=r.status_code)
 
     def _audit_line(model: str, audit: dict, stream: bool) -> None:
         line = {"ts": time.strftime("%Y-%m-%dT%H:%M:%S"), "model": model,
@@ -187,52 +284,36 @@ def create_app(*, upstream: Optional[str] = None,
                 "upstream": app.state.upstream,
                 "half_life": app.state.half_life, "threshold": app.state.threshold}
 
+    def _audit_fields(audit: dict) -> dict:
+        return {k: audit[k] for k in ("tokens_before", "tokens_after",
+                "reduction", "kernel_latency_us", "blocks_purged")}
+
     @app.post("/v1/chat/completions")
     async def chat_completions(request: Request):
         body = await request.json()
-        messages = body.get("messages") or []
         survivors, audit = dehydrate_messages(
-            messages, half_life=app.state.half_life,
+            body.get("messages") or [], half_life=app.state.half_life,
             safe_threshold=app.state.threshold)
         body["messages"] = survivors
-        model = str(body.get("model", "?"))
         stream = bool(body.get("stream", False))
-        _audit_line(model, audit, stream)
+        _audit_line(str(body.get("model", "?")), audit, stream)
+        # OpenAI SDKs ignore unknown top-level fields → safe to inject the audit
+        return await _forward(request, "/chat/completions", body, stream,
+                              inject=None if stream else _audit_fields(audit))
 
-        url = f"{app.state.upstream}/chat/completions"
-        headers = {"Content-Type": "application/json", **_auth_header(request)}
-        for h in ("http-referer", "x-title"):
-            if request.headers.get(h):
-                headers[h] = request.headers[h]
-
-        if stream:
-            req = app.state.client.build_request("POST", url, headers=headers,
-                                                 json=body)
-            upstream_resp = await app.state.client.send(req, stream=True)
-
-            async def pump():
-                try:
-                    async for chunk in upstream_resp.aiter_bytes():
-                        yield chunk
-                finally:
-                    await upstream_resp.aclose()
-
-            return StreamingResponse(
-                pump(), status_code=upstream_resp.status_code,
-                media_type=upstream_resp.headers.get("content-type",
-                                                     "text/event-stream"))
-
-        r = await app.state.client.post(url, headers=headers, json=body)
-        try:
-            payload = r.json()
-        except ValueError:
-            return JSONResponse({"error": "upstream returned non-JSON"},
-                                status_code=502)
-        if isinstance(payload, dict):
-            payload["bioma"] = {k: audit[k] for k in
-                                ("tokens_before", "tokens_after", "reduction",
-                                 "kernel_latency_us", "blocks_purged")}
-        return JSONResponse(payload, status_code=r.status_code)
+    @app.post("/v1/messages")
+    async def messages(request: Request):
+        """Anthropic Messages surface — point Claude Code's ANTHROPIC_BASE_URL here.
+        `system` is a top-level field, forwarded untouched (never purged)."""
+        body = await request.json()
+        survivors, audit = dehydrate_anthropic(
+            body.get("messages") or [], half_life=app.state.half_life,
+            safe_threshold=app.state.threshold)
+        body["messages"] = survivors
+        stream = bool(body.get("stream", False))
+        _audit_line(str(body.get("model", "?")), audit, stream)
+        # the Anthropic response schema is strict; keep it clean (JSONL audit only)
+        return await _forward(request, "/messages", body, stream, inject=None)
 
     return app
 
