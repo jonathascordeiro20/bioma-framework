@@ -72,6 +72,8 @@ k.saturation_scan(payload)     # score de DDoS cognitivo 0..1 (flood ≈ 1.0)
 | Apoptose de contexto | **−80% tokens de entrada** (até −97% em sessão longa) | `tests/test_enxuto_efficiency.py` |
 | Preservação de qualidade da resposta | **10/10 paridade, 100% de acerto com −97% de tokens** (5 modelos online, probes objetivas) | `tests/test_quality_preservation.py` · `reports/BIOMA_QUALITY_PRESERVATION.md` |
 | Energia medida por dispatch | **2.714,7 J → 69,5 J (−97,4%)**, com paridade de qualidade (Llama 3.2 1B local, fuel gauge de bateria, idle subtraído) | `tests/test_energy_local.py` · `reports/BIOMA_ENERGY_LOCAL.md` |
+| Apoptose de contexto em visão (loops de screenshot de agentes) | **6/6 paridade, 100% de acerto com −56% de tokens reais** (−77% com 24 passos; payload desidratado é O(1) no tamanho da sessão) — 3 modelos de visão, probes rendidas nos pixels | `tests/test_vision_quality_preservation.py` · `reports/BIOMA_VISION_QUALITY.md` |
+| Destilação de imagens (dedup keep-latest + OCR + estrutura determinística de formas) | **100% das respostas com −74% de tokens vs enviar toda imagem** — imagens antigas viram blocos de ~25–86 tokens; caption por VLM local medido e rejeitado (confabula rótulos) | `tests/test_vision_distill.py` · `reports/BIOMA_VISION_DISTILL.md` |
 | Barramento hormonal | **~2M sinais/s @ ~5μs**, limitado sob 10× de carga | bench arquivado (repo de pesquisa) |
 | Mitigação de DDoS cognitivo | flood de 15k tokens → desidratado antes do despacho | `tests/test_sovereign_defense.py` |
 | Redação de segredos | valores do vault nunca chegam ao modelo | `reports/BIOMA_IMMUNITY_VERDICT.md` |
