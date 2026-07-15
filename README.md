@@ -71,6 +71,7 @@ k.saturation_scan(payload)     # cognitive-DDoS score 0..1 (flood ≈ 1.0)
 |---|---|---|
 | Context apoptosis | **−80% input tokens** (up to −97% long sessions) | `tests/test_enxuto_efficiency.py` |
 | Answer-quality preservation | **10/10 parity, 100% correct answers at −97% tokens** (5 online models, objective probes) | `tests/test_quality_preservation.py` · `reports/BIOMA_QUALITY_PRESERVATION.md` |
+| Measured energy per dispatch | **2,714.7 J → 69.5 J (−97.4%)**, quality parity (local Llama 3.2 1B, battery fuel gauge, idle subtracted) | `tests/test_energy_local.py` · `reports/BIOMA_ENERGY_LOCAL.md` |
 | Hormonal bus | **~2M signals/s @ ~5μs**, bounded under 10× load | archived bench (research repo) |
 | Cognitive-DDoS mitigation | 15k-token flood → dehydrated pre-dispatch | `tests/test_sovereign_defense.py` |
 | Secret redaction | vault values never reach the model | `reports/BIOMA_IMMUNITY_VERDICT.md` |
