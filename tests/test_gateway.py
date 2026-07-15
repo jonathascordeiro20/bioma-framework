@@ -223,6 +223,32 @@ def test_anthropic_tool_pairs_never_orphan(client):
                                  for b in prev.get("content", []) if isinstance(b, dict))
 
 
+def test_anthropic_tool_units_signal_as_tool():
+    # regression: an Anthropic tool_use/tool_result exchange must be classified
+    # TOOL (disposable), not ASSISTANT — else verbose tool output never purges.
+    from bioma.gateway import _unit_signal
+    import bioma_micro as k
+    tool_use = {"role": "assistant", "content": [
+        {"type": "tool_use", "id": "t0", "name": "grep", "input": {}}]}
+    tool_res = {"role": "user", "content": [
+        {"type": "tool_result", "tool_use_id": "t0", "content": "big output"}]}
+    assert _unit_signal([tool_use, tool_res]) == k.TOOL
+
+
+def test_anthropic_verbose_tool_history_purges():
+    # a long session of verbose tool exchanges should now dehydrate substantially
+    msgs = [{"role": "user", "content": "start the task"}]
+    for i in range(20):
+        msgs += [{"role": "assistant", "content": [
+                    {"type": "tool_use", "id": f"t{i}", "name": "run", "input": {}}]},
+                 {"role": "user", "content": [
+                    {"type": "tool_result", "tool_use_id": f"t{i}",
+                     "content": f"verbose output {i} " * 60}]}]
+    msgs.append({"role": "user", "content": "summarize"})
+    survivors, audit = dehydrate_anthropic(msgs, half_life=6.0, safe_threshold=0.35)
+    assert audit["reduction"] > 0.4  # verbose tool history dehydrated
+
+
 def test_anthropic_tool_result_tail_keeps_its_tool_use():
     # if the session ends on a tool_result (user), its paired tool_use must survive
     msgs = [{"role": "user", "content": "start"}]

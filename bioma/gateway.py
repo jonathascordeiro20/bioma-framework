@@ -27,7 +27,10 @@ Design guarantees (each one is unit-tested):
    (extra fields are ignored by SDKs).
 
 Upstream: `BIOMA_UPSTREAM` (default https://openrouter.ai/api/v1). Auth: the
-client's Authorization header is forwarded; if absent, `OPENROUTER_API_KEY`.
+client's Authorization / x-api-key is forwarded; if absent, `OPENROUTER_API_KEY`.
+Bridge mode (`BIOMA_FORCE_KEY` set) ignores the client's key and always uses
+`OPENROUTER_API_KEY` — needed to point an Anthropic client such as Claude Code
+(`ANTHROPIC_BASE_URL=http://localhost:8790`) at an OpenRouter upstream.
 Tuning: `BIOMA_HALF_LIFE` (6.0) and `BIOMA_SAFE_THRESHOLD` (0.35).
 """
 from __future__ import annotations
@@ -41,6 +44,14 @@ from typing import Any, Optional
 import httpx
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, StreamingResponse
+
+# Load .env so the standalone server (uvicorn) finds OPENROUTER_API_KEY without
+# it having to be exported into the shell — matches how the tests load it.
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except Exception:
+    pass
 
 import bioma_micro as kernel
 
@@ -84,6 +95,23 @@ def _has_cache_control(content: Any) -> bool:
         isinstance(p, dict) and p.get("cache_control") for p in content)
 
 
+def _has_block_type(msg: dict, block_type: str) -> bool:
+    return any(isinstance(b, dict) and b.get("type") == block_type
+               for b in _blocks(msg.get("content")))
+
+
+def _is_tool_unit(msgs: list[dict]) -> bool:
+    """A purge unit is 'tool' (verbose, disposable) if any of its messages is a
+    tool exchange — OpenAI (`tool` role / `tool_calls`) OR Anthropic
+    (`tool_use` / `tool_result` content blocks)."""
+    for m in msgs:
+        if m.get("role") == "tool" or m.get("tool_calls"):
+            return True
+        if _has_block_type(m, "tool_use") or _has_block_type(m, "tool_result"):
+            return True
+    return False
+
+
 def _unit_signal(msgs: list[dict]) -> int:
     first = msgs[0]
     role = first.get("role", "user")
@@ -94,7 +122,8 @@ def _unit_signal(msgs: list[dict]) -> int:
         return kernel.FACT
     if role == "system":
         return kernel.SYSTEM
-    if role == "tool" or first.get("tool_calls"):
+    # tool exchanges are disposable in BOTH protocol shapes
+    if _is_tool_unit(msgs):
         return kernel.TOOL
     if role == "assistant":
         return kernel.ASSISTANT
@@ -220,7 +249,14 @@ def create_app(*, upstream: Optional[str] = None,
 
     def _auth_headers(request: Request) -> dict[str, str]:
         """Forward the caller's auth (Bearer OR Anthropic x-api-key); fall back
-        to OPENROUTER_API_KEY. OpenRouter accepts both header styles."""
+        to OPENROUTER_API_KEY. In BRIDGE MODE (`BIOMA_FORCE_KEY` set) the client's
+        own key is ignored and OPENROUTER_API_KEY is always used — needed when
+        bridging an Anthropic client (e.g. Claude Code) to the OpenRouter upstream,
+        since the client sends its own Anthropic-style key."""
+        force = os.environ.get("BIOMA_FORCE_KEY", "")
+        if force:
+            key = os.environ.get("OPENROUTER_API_KEY", "") or force
+            return {"Authorization": f"Bearer {key}"}
         out: dict[str, str] = {}
         if request.headers.get("authorization"):
             out["Authorization"] = request.headers["authorization"]
@@ -314,6 +350,15 @@ def create_app(*, upstream: Optional[str] = None,
         _audit_line(str(body.get("model", "?")), audit, stream)
         # the Anthropic response schema is strict; keep it clean (JSONL audit only)
         return await _forward(request, "/messages", body, stream, inject=None)
+
+    @app.post("/v1/messages/count_tokens")
+    async def count_tokens(request: Request):
+        """Auxiliary endpoint some Anthropic clients (Claude Code) call. Passthrough
+        WITHOUT apoptosis: it must count the tokens the client actually holds, so
+        the client's own context bookkeeping stays consistent."""
+        body = await request.json()
+        return await _forward(request, "/messages/count_tokens", body,
+                              stream=False, inject=None)
 
     return app
 

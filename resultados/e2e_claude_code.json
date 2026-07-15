@@ -1,0 +1,10 @@
+{
+  "solved": true,
+  "turns": 9,
+  "cost": 1.0840761,
+  "audit": {
+    "before": 36634,
+    "after": 36634,
+    "requests": 8
+  }
+}
