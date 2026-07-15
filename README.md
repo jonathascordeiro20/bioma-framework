@@ -74,6 +74,7 @@ k.saturation_scan(payload)     # cognitive-DDoS score 0..1 (flood ≈ 1.0)
 | Measured energy per dispatch | **2,714.7 J → 69.5 J (−97.4%)**, quality parity (local Llama 3.2 1B, battery fuel gauge, idle subtracted) | `tests/test_energy_local.py` · `reports/BIOMA_ENERGY_LOCAL.md` |
 | Vision context apoptosis (agent screenshot loops) | **6/6 parity, 100% correct at −56% real tokens** (−77% at 24 steps; dehydrated payload is O(1) in session length) — 3 vision models, probes rendered into the pixels | `tests/test_vision_quality_preservation.py` · `reports/BIOMA_VISION_QUALITY.md` |
 | Image distillation (keep-latest dedup + OCR + deterministic shape structure) | **100% answers at −74% tokens vs sending every image** — stale images become ~25–86-token text blocks; local VLM captions measured and rejected (label confabulation) | `tests/test_vision_distill.py` · `reports/BIOMA_VISION_DISTILL.md` |
+| Dev-workload cost benchmark (7 agent models, real OpenRouter usage & prices) | **−57% to −86% median cost at quality parity** — 126 real executions, paired replicas, failures reported first-page (Fable 5×T1 arm-B empty 3/3) | `tests/benchmark_dev_openrouter.py` · `resultados/relatorio.md` · `resultados/SIMULACAO_MERCADO.md` |
 | Hormonal bus | **~2M signals/s @ ~5μs**, bounded under 10× load | archived bench (research repo) |
 | Cognitive-DDoS mitigation | 15k-token flood → dehydrated pre-dispatch | `tests/test_sovereign_defense.py` |
 | Secret redaction | vault values never reach the model | `reports/BIOMA_IMMUNITY_VERDICT.md` |
