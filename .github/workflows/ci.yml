@@ -41,7 +41,7 @@ jobs:
       - name: Run lean unit tests (kernel + firewall + server)
         run: |
           pip install pytest fastapi "uvicorn[standard]" httpx "openai>=1" "anthropic>=0.40" python-dotenv "pydantic>=2"
-          python -m pytest tests/test_kernel.py tests/test_firewall.py tests/test_server.py tests/test_esg.py tests/test_gateway.py -q
+          python -m pytest tests/test_kernel.py tests/test_firewall.py tests/test_server.py tests/test_esg.py tests/test_esg_report.py tests/test_gateway.py -q
 
   docker-image:
     runs-on: ubuntu-latest

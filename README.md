@@ -146,6 +146,13 @@ bounded Wh/gCO2e estimates using declared literature coefficients
 conversion helpers shipped in `bioma/esg.py`. This is a per-deployment claim —
 not a global one; it scales with adoption and with your grid.
 
+Turn your own real traffic into a case report: run your workload through the
+gateway, then `python -m bioma.esg_report bioma_gateway_audit.jsonl --grid eu
+--price-in <your $/M>` prints tokens / Wh / gCO2e / $ avoided from the measured
+audit log — the design-partner instrument (`bioma/esg_report.py`). A ready-to-run
+NVIDIA-GPU energy harness (`tests/measure_energy_gpu.py`) awaits datacenter
+hardware; it fabricates no numbers without a GPU.
+
 ## Quickstart (local)
 
 ```bash
