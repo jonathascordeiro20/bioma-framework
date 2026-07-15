@@ -20,3 +20,7 @@ target/
 *.log
 bioevents.jsonl
 .env.bak
+
+# gateway per-request audit log (runtime)
+bioma_gateway_audit.jsonl
+resultados/gateway_dropin_audit.jsonl
