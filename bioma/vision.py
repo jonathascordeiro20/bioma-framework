@@ -24,8 +24,9 @@ from __future__ import annotations
 
 import base64
 import io
+import re
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass
@@ -36,6 +37,36 @@ class Distilled:
     est_tokens: int
 
 
+# Common secret shapes, so image redaction works even without a known vault.
+SECRET_PATTERNS: list[tuple[str, "re.Pattern[str]"]] = [
+    ("aws_access_key", re.compile(r"AKIA[0-9A-Z]{16}")),
+    ("aws_secret", re.compile(r"(?i)aws_secret[^A-Za-z0-9]{0,3}[A-Za-z0-9/+=]{30,}")),
+    ("openai_key", re.compile(r"sk-[A-Za-z0-9_-]{20,}")),
+    ("github_token", re.compile(r"gh[pousr]_[A-Za-z0-9]{20,}")),
+    ("slack_token", re.compile(r"xox[baprs]-[A-Za-z0-9-]{10,}")),
+    ("google_api", re.compile(r"AIza[0-9A-Za-z_-]{30,}")),
+    ("bearer", re.compile(r"(?i)bearer\s+[A-Za-z0-9._-]{16,}")),
+    ("private_key", re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----")),
+]
+
+
+@dataclass
+class SecretFinding:
+    text: str              # the OCR segment that matched
+    kind: str              # pattern name, or "vault" for a known value
+    box: list              # OCR polygon (4 points) — the region to mask
+
+
+@dataclass
+class ImageScan:
+    findings: list[SecretFinding] = field(default_factory=list)
+    ocr_ms: float = 0.0
+
+    @property
+    def has_secret(self) -> bool:
+        return bool(self.findings)
+
+
 class VisionDistiller:
     """Client-side image dedup + OCR distillation (lazy, offline)."""
 
@@ -43,6 +74,52 @@ class VisionDistiller:
         self.dup_threshold = dup_threshold
         self._ocr = None
         self._hashes: list = []
+
+    # ---- stage 0: secret redaction in PIXELS (closes the firewall's blind spot) #
+    def scan_secrets(self, data_url: str, *, vault: tuple = (),
+                     patterns: list = SECRET_PATTERNS) -> ImageScan:
+        """OCR the image and flag any segment that is a known vault value OR matches
+        a secret pattern — with its bounding box. This is what the text firewall
+        cannot see: a secret rendered into pixels."""
+        import numpy as np  # lazy
+        if self._ocr is None:
+            from rapidocr_onnxruntime import RapidOCR
+            self._ocr = RapidOCR()
+        t0 = time.perf_counter()
+        result, _ = self._ocr(np.array(self._to_pil(data_url)))
+        ms = (time.perf_counter() - t0) * 1000.0
+        vault_vals = [str(v) for v in vault if v]
+        findings: list[SecretFinding] = []
+        for box, text, *_ in (result or []):
+            for v in vault_vals:
+                if v and v in text:
+                    findings.append(SecretFinding(text=text, kind="vault", box=box))
+                    break
+            else:
+                for name, pat in patterns:
+                    if pat.search(text):
+                        findings.append(SecretFinding(text=text, kind=name, box=box))
+                        break
+        return ImageScan(findings=findings, ocr_ms=ms)
+
+    def redact_secrets(self, data_url: str, *, vault: tuple = (),
+                       patterns: list = SECRET_PATTERNS) -> tuple[str, ImageScan]:
+        """Scan for secrets and MASK their regions with black boxes, returning a
+        clean data-URL + the scan. The rest of the screenshot stays usable; only
+        the secret is blacked out. If nothing is found, returns the input unchanged."""
+        from PIL import ImageDraw  # lazy
+        scan = self.scan_secrets(data_url, vault=vault, patterns=patterns)
+        if not scan.has_secret:
+            return data_url, scan
+        img = self._to_pil(data_url)
+        draw = ImageDraw.Draw(img)
+        for f in scan.findings:
+            xs = [p[0] for p in f.box]
+            ys = [p[1] for p in f.box]
+            draw.rectangle([min(xs), min(ys), max(xs), max(ys)], fill="black")
+        buf = io.BytesIO()
+        img.save(buf, format="PNG")
+        return "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode(), scan
 
     # ---- stage 1: perceptual dedup ---------------------------------------- #
     def is_duplicate(self, data_url: str) -> tuple[bool, float]:

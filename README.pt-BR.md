@@ -82,6 +82,7 @@ k.saturation_scan(payload)     # score de DDoS cognitivo 0..1 (flood ≈ 1.0)
 | Barramento hormonal | **~2M sinais/s @ ~5μs**, limitado sob 10× de carga | bench arquivado (repo de pesquisa) |
 | Mitigação de DDoS cognitivo | flood de 15k tokens → desidratado antes do despacho | `tests/test_sovereign_defense.py` |
 | Redação de segredos | valores do vault nunca chegam ao modelo | `reports/BIOMA_IMMUNITY_VERDICT.md` |
+| Redação de segredos em pixels (fecha a lacuna que declaramos) | **um modelo de visão real transcreve uma chave AWS/OpenAI do screenshot original mas só `████` do redigido** — OCR + máscara de região, client-side | `tests/test_vision_secret_redaction.py` · `reports/BIOMA_PIXEL_SECRETS.md` |
 
 ## Frugal AI — o KPI oficial: energia por token
 

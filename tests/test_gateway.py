@@ -19,7 +19,7 @@ if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
 from bioma.gateway import (create_app, dehydrate_anthropic,  # noqa: E402
-                           dehydrate_messages)
+                           dehydrate_messages, redact_image_secrets)
 
 
 # ---- a mock upstream that echoes back the forwarded messages -------------- #
@@ -247,6 +247,35 @@ def test_anthropic_verbose_tool_history_purges():
     msgs.append({"role": "user", "content": "summarize"})
     survivors, audit = dehydrate_anthropic(msgs, half_life=6.0, safe_threshold=0.35)
     assert audit["reduction"] > 0.4  # verbose tool history dehydrated
+
+
+def test_redact_image_secrets_walks_both_formats():
+    # fake redactor: pretends every data-URL had 1 secret, returns a marker
+    def fake(url):
+        return "data:image/png;base64,REDACTED", 1
+    msgs = [
+        {"role": "user", "content": [                    # OpenAI image part
+            {"type": "text", "text": "look"},
+            {"type": "image_url", "image_url": {"url": "data:image/png;base64,AAAA"}}]},
+        {"role": "user", "content": [                    # Anthropic image block
+            {"type": "image", "source": {"type": "base64",
+             "media_type": "image/png", "data": "BBBB"}}]},
+        {"role": "user", "content": "no images here"},   # str content untouched
+    ]
+    n = redact_image_secrets(msgs, fake)
+    assert n == 2
+    assert msgs[0]["content"][1]["image_url"]["url"] == "data:image/png;base64,REDACTED"
+    assert msgs[1]["content"][0]["source"]["data"] == "REDACTED"
+    assert msgs[2]["content"] == "no images here"
+
+
+def test_redact_image_secrets_noop_when_clean():
+    def clean(url):
+        return url, 0   # nothing found
+    msgs = [{"role": "user", "content": [
+        {"type": "image_url", "image_url": {"url": "data:image/png;base64,ZZ"}}]}]
+    assert redact_image_secrets(msgs, clean) == 0
+    assert msgs[0]["content"][0]["image_url"]["url"] == "data:image/png;base64,ZZ"
 
 
 def test_anthropic_tool_result_tail_keeps_its_tool_use():

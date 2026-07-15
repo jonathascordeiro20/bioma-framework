@@ -31,6 +31,9 @@ client's Authorization / x-api-key is forwarded; if absent, `OPENROUTER_API_KEY`
 Bridge mode (`BIOMA_FORCE_KEY` set) ignores the client's key and always uses
 `OPENROUTER_API_KEY` — needed to point an Anthropic client such as Claude Code
 (`ANTHROPIC_BASE_URL=http://localhost:8790`) at an OpenRouter upstream.
+Pixel secret redaction (`BIOMA_REDACT_IMAGE_SECRETS` set): OCR every image part
+and mask secrets visible in the pixels before dispatch — opt-in, since OCR is
+off the hot path only when enabled (see `reports/BIOMA_PIXEL_SECRETS.md`).
 Tuning: `BIOMA_HALF_LIFE` (6.0) and `BIOMA_SAFE_THRESHOLD` (0.35).
 """
 from __future__ import annotations
@@ -208,6 +211,37 @@ def _group_units_anthropic(history: list[dict]) -> list[list[dict]]:
     return units
 
 
+def redact_image_secrets(messages: list[dict], redactor) -> int:
+    """Walk image content parts (OpenAI `image_url` data-URLs and Anthropic
+    `image`/base64 blocks) and mask any secret visible in the pixels, in place.
+    `redactor(data_url) -> (clean_data_url, n_secrets)`. Returns total masked.
+    Opt-in (OCR is off the hot path only when `BIOMA_REDACT_IMAGE_SECRETS` is set)."""
+    total = 0
+    for m in messages:
+        content = m.get("content")
+        if not isinstance(content, list):
+            continue
+        for part in content:
+            if not isinstance(part, dict):
+                continue
+            if part.get("type") == "image_url":                    # OpenAI
+                url = (part.get("image_url") or {}).get("url", "")
+                if url.startswith("data:image"):
+                    clean, n = redactor(url)
+                    if n:
+                        part["image_url"]["url"] = clean
+                        total += n
+            elif part.get("type") == "image":                      # Anthropic
+                src = part.get("source") or {}
+                if src.get("type") == "base64" and src.get("data"):
+                    data_url = f"data:{src.get('media_type','image/png')};base64,{src['data']}"
+                    clean, n = redactor(data_url)
+                    if n:
+                        src["data"] = clean.split(",", 1)[1]
+                        total += n
+    return total
+
+
 def dehydrate_anthropic(messages: list[dict], *, half_life: float,
                         safe_threshold: float) -> tuple[list[dict], dict]:
     """Apoptosis over Anthropic Messages. `system` is a separate top-level field
@@ -246,6 +280,18 @@ def create_app(*, upstream: Optional[str] = None,
     app.state.threshold = float(os.environ.get("BIOMA_SAFE_THRESHOLD", "0.35"))
     app.state.audit_path = os.environ.get("BIOMA_AUDIT_LOG", "bioma_gateway_audit.jsonl")
     app.state.client = httpx.AsyncClient(transport=transport, timeout=600.0)
+    # opt-in pixel secret redaction (OCR is slow → off by default). A lazily-built
+    # VisionDistiller masks secrets visible in image content parts before dispatch.
+    app.state.redact_images = os.environ.get("BIOMA_REDACT_IMAGE_SECRETS", "") != ""
+    app.state.redactor = None
+
+    def _image_redactor():
+        if app.state.redactor is None:
+            from bioma.vision import VisionDistiller
+            d = VisionDistiller()
+            app.state.redactor = lambda url: (lambda c, s: (c, len(s.findings)))(
+                *d.redact_secrets(url))
+        return app.state.redactor
 
     def _auth_headers(request: Request) -> dict[str, str]:
         """Forward the caller's auth (Bearer OR Anthropic x-api-key); fall back
@@ -330,6 +376,8 @@ def create_app(*, upstream: Optional[str] = None,
         survivors, audit = dehydrate_messages(
             body.get("messages") or [], half_life=app.state.half_life,
             safe_threshold=app.state.threshold)
+        if app.state.redact_images:
+            redact_image_secrets(survivors, _image_redactor())
         body["messages"] = survivors
         stream = bool(body.get("stream", False))
         _audit_line(str(body.get("model", "?")), audit, stream)
@@ -345,6 +393,8 @@ def create_app(*, upstream: Optional[str] = None,
         survivors, audit = dehydrate_anthropic(
             body.get("messages") or [], half_life=app.state.half_life,
             safe_threshold=app.state.threshold)
+        if app.state.redact_images:
+            redact_image_secrets(survivors, _image_redactor())
         body["messages"] = survivors
         stream = bool(body.get("stream", False))
         _audit_line(str(body.get("model", "?")), audit, stream)
