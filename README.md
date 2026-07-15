@@ -76,6 +76,18 @@ k.saturation_scan(payload)     # cognitive-DDoS score 0..1 (flood ≈ 1.0)
 | Cognitive-DDoS mitigation | 15k-token flood → dehydrated pre-dispatch | `tests/test_sovereign_defense.py` |
 | Secret redaction | vault values never reach the model | `reports/BIOMA_IMMUNITY_VERDICT.md` |
 
+## Frugal AI — the official KPI: energy per token
+
+B.I.O.M.A. is a **client-side Frugal AI layer that auditably reduces the energy
+cost of LLM inference per deployment**. The kernel's per-dispatch audit
+(tokens before/after) *is* the KPI: the reduction percentage is exact and
+coefficient-independent. A reproducible benchmark (`tests/test_esg_benchmark.py`
+→ `reports/BIOMA_ESG_BENCHMARK.md`) converts the measured token savings into
+bounded Wh/gCO2e estimates using declared literature coefficients
+(0.5–1.3 kWh/M tokens; grid presets; caching-adjusted counterfactual), with the
+conversion helpers shipped in `bioma/esg.py`. This is a per-deployment claim —
+not a global one; it scales with adoption and with your grid.
+
 ## Quickstart (local)
 
 ```bash

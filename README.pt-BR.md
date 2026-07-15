@@ -76,6 +76,18 @@ k.saturation_scan(payload)     # score de DDoS cognitivo 0..1 (flood ≈ 1.0)
 | Mitigação de DDoS cognitivo | flood de 15k tokens → desidratado antes do despacho | `tests/test_sovereign_defense.py` |
 | Redação de segredos | valores do vault nunca chegam ao modelo | `reports/BIOMA_IMMUNITY_VERDICT.md` |
 
+## Frugal AI — o KPI oficial: energia por token
+
+O B.I.O.M.A. é uma **camada Frugal AI client-side que reduz de forma auditável o
+custo energético de inferência de LLM por deployment**. A auditoria por dispatch
+do kernel (tokens antes/depois) *é* o KPI: a redução percentual é exata e
+independente de coeficiente. Um benchmark reproduzível
+(`tests/test_esg_benchmark.py` → `reports/BIOMA_ESG_BENCHMARK.md`) converte a
+economia de tokens medida em estimativas limitadas de Wh/gCO2e com coeficientes
+declarados da literatura (0,5–1,3 kWh/M tokens; presets de grid; contrafactual
+ajustado por caching), com os helpers de conversão em `bioma/esg.py`. É uma
+alegação por deployment — não global; escala com adoção e com o seu grid.
+
 ## Início rápido (local)
 
 ```bash
