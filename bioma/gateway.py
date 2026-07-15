@@ -364,3 +364,18 @@ def create_app(*, upstream: Optional[str] = None,
 
 
 app = create_app()
+
+
+def _main() -> None:
+    """Console entry point: `bioma-gateway` → runs the gateway with uvicorn.
+    Config via env: BIOMA_PORT (8790), BIOMA_HOST (127.0.0.1), plus the tuning /
+    upstream / audit vars documented in this module."""
+    import uvicorn
+    uvicorn.run("bioma.gateway:app",
+                host=os.environ.get("BIOMA_HOST", "127.0.0.1"),
+                port=int(os.environ.get("BIOMA_PORT", "8790")),
+                log_level=os.environ.get("BIOMA_LOG_LEVEL", "info"))
+
+
+if __name__ == "__main__":
+    _main()

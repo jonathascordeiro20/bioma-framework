@@ -95,6 +95,20 @@ declarados da literatura (0,5–1,3 kWh/M tokens; presets de grid; contrafactual
 ajustado por caching), com os helpers de conversão em `bioma/esg.py`. É uma
 alegação por deployment — não global; escala com adoção e com o seu grid.
 
+## Instalação
+
+```bash
+pip install bioma            # core: micro-kernel Rust + API Python
+pip install bioma[gateway]   # + o gateway drop-in OpenAI/Anthropic
+pip install bioma[all]       # + client, anthropic e o tier de visão
+```
+
+O install core já traz o kernel Rust compilado (`bioma_micro`) como wheel binário
+— sem toolchain Rust. Os extras (`gateway`, `client`, `anthropic`, `vision`) são
+opt-in para manter a base leve. Para mantenedores, publicar é um tag
+(`git tag v1.0.0 && git push --tags` → o workflow `Release` constrói os wheels
+multi-plataforma e publica no PyPI).
+
 ## Início rápido (local)
 
 ```bash

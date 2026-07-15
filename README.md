@@ -83,6 +83,21 @@ k.saturation_scan(payload)     # cognitive-DDoS score 0..1 (flood ≈ 1.0)
 | Cognitive-DDoS mitigation | 15k-token flood → dehydrated pre-dispatch | `tests/test_sovereign_defense.py` |
 | Secret redaction | vault values never reach the model | `reports/BIOMA_IMMUNITY_VERDICT.md` |
 
+## Install
+
+```bash
+pip install bioma            # core: the Rust micro-kernel + Python API
+pip install bioma[gateway]   # + the drop-in OpenAI/Anthropic gateway
+pip install bioma[all]       # + client, anthropic, and the vision tier
+```
+
+The core install ships the compiled Rust kernel (`bioma_micro`) as a binary
+wheel — no Rust toolchain required. Extras (`gateway`, `client`, `anthropic`,
+`vision`) are opt-in so the base stays light. Publishing is one tag away for
+maintainers (`git tag v1.0.0 && git push --tags` → the `Release` workflow builds
+multi-platform wheels and publishes to PyPI). Local dev from source is in
+[Quickstart](#quickstart-local).
+
 ## Drop-in gateway — apoptosis with zero code changes
 
 Point any OpenAI-compatible **or Anthropic-compatible** client's `base_url` at
