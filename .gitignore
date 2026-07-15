@@ -24,3 +24,4 @@ bioevents.jsonl
 # gateway per-request audit log (runtime)
 bioma_gateway_audit.jsonl
 resultados/gateway_dropin_audit.jsonl
+reference_pilot_audit.jsonl
