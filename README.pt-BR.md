@@ -99,9 +99,10 @@ alegação por deployment — não global; escala com adoção e com o seu grid.
 ## Instalação
 
 ```bash
-pip install bioma            # core: micro-kernel Rust + API Python
-pip install bioma[gateway]   # + o gateway drop-in OpenAI/Anthropic
-pip install bioma[all]       # + client, anthropic e o tier de visão
+pip install bioma-framework            # core: micro-kernel Rust + API Python
+pip install "bioma-framework[gateway]"   # + o gateway drop-in OpenAI/Anthropic
+pip install "bioma-framework[all]"       # + client, anthropic e o tier de visão
+# só o kernel (sem a camada Python): pip install bioma-micro
 ```
 
 O install core já traz o kernel Rust compilado (`bioma_micro`) como wheel binário

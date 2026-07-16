@@ -1,0 +1,6 @@
+# Default owner for everything in the repo.
+* @jonathascordeiro20
+
+# The Rust kernel is the hot path — changes here need extra scrutiny.
+/bioma_micro/ @jonathascordeiro20
+/.github/workflows/ @jonathascordeiro20

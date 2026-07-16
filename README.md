@@ -3,6 +3,8 @@
 **🌐 English · [Português](README.pt-BR.md)**
 
 [![CI](https://github.com/jonathascordeiro20/bioma-framework/actions/workflows/ci.yml/badge.svg)](https://github.com/jonathascordeiro20/bioma-framework/actions/workflows/ci.yml)
+[![PyPI - bioma-framework](https://img.shields.io/pypi/v/bioma-framework.svg?label=bioma-framework)](https://pypi.org/project/bioma-framework/)
+[![PyPI - bioma-micro](https://img.shields.io/pypi/v/bioma-micro.svg?label=bioma-micro)](https://pypi.org/project/bioma-micro/)
 [![License: FSL-1.1-MIT](https://img.shields.io/badge/license-FSL--1.1--MIT-blue.svg)](LICENSE)
 ![Built with Rust + Python](https://img.shields.io/badge/built%20with-Rust%20%2B%20Python-orange.svg)
 ![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)
@@ -87,9 +89,10 @@ k.saturation_scan(payload)     # cognitive-DDoS score 0..1 (flood ≈ 1.0)
 ## Install
 
 ```bash
-pip install bioma            # core: the Rust micro-kernel + Python API
-pip install bioma[gateway]   # + the drop-in OpenAI/Anthropic gateway
-pip install bioma[all]       # + client, anthropic, and the vision tier
+pip install bioma-framework            # core: the Rust micro-kernel + Python API
+pip install "bioma-framework[gateway]"   # + the drop-in OpenAI/Anthropic gateway
+pip install "bioma-framework[all]"       # + client, anthropic, and the vision tier
+# kernel only (no Python layer): pip install bioma-micro
 ```
 
 The core install ships the compiled Rust kernel (`bioma_micro`) as a binary

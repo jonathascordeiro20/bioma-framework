@@ -1,0 +1,29 @@
+name: Bug report
+description: Something misbehaves (wrong purge, crash, gateway error)
+labels: ["bug"]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Versions
+      description: "`pip show bioma-framework bioma-micro` + OS + Python"
+      placeholder: "bioma-framework 1.0.0, bioma-micro 1.0.0, Windows 11, Python 3.12"
+    validations: { required: true }
+  - type: textarea
+    id: repro
+    attributes:
+      label: Minimal reproduction
+      description: Smallest script/history that shows the problem. For purge issues, include the message classes (SYSTEM/FACT/TOOL/...) and the half_life/safe_threshold used.
+      render: python
+    validations: { required: true }
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected vs actual
+    validations: { required: true }
+  - type: textarea
+    id: audit
+    attributes:
+      label: Audit line (if gateway)
+      description: The relevant JSONL line(s) from `bioma_gateway_audit.jsonl`, if applicable.
+      render: json
