@@ -1,0 +1,25 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "bioma-langchain"
+version = "0.1.0"
+description = "Context apoptosis for LangChain: µs-scale, class-aware history pruning (B.I.O.M.A. kernel) as a drop-in Runnable."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "LicenseRef-FSL-1.1-MIT" }
+authors = [{ name = "Jonathas Cordeiro", email = "jonathas.cordeiro2023@gmail.com" }]
+keywords = ["langchain", "llm", "context-window", "token-optimization", "bioma"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Intended Audience :: Developers",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = ["bioma_micro>=1.0.0", "langchain-core>=0.3"]
+
+[project.urls]
+Repository = "https://github.com/jonathascordeiro20/bioma-framework"
+
+[tool.hatch.build.targets.wheel]
+packages = ["bioma_langchain"]

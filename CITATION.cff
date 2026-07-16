@@ -1,0 +1,30 @@
+cff-version: 1.2.0
+message: "If you use B.I.O.M.A. in your research or product, please cite it as below."
+title: "B.I.O.M.A.: a local efficiency-and-security micro-kernel for LLM applications"
+type: software
+authors:
+  - family-names: "Cordeiro"
+    given-names: "Jonathas Silva"
+    email: "jonathas.cordeiro2023@gmail.com"
+version: "1.0.0"
+date-released: "2026-07-16"
+license: "LicenseRef-FSL-1.1-MIT"
+repository-code: "https://github.com/jonathascordeiro20/bioma-framework"
+url: "https://pypi.org/project/bioma-framework/"
+keywords:
+  - large language models
+  - context management
+  - prompt compression
+  - token optimization
+  - context apoptosis
+  - llm security
+  - rust
+abstract: >-
+  B.I.O.M.A. is a drop-in micro-kernel (Rust + Python) that dehydrates stale,
+  low-value LLM context before dispatch (class-aware half-life decay, ~1 µs
+  decision latency), detects cognitive-DDoS floods, and redacts pixel-level
+  secrets — with a deterministic per-request audit trail. Benchmarks with raw
+  data cover an end-to-end A/B against a real coding agent and a head-to-head
+  against LLMLingua-2 at matched compression budgets.
+# After the first Zenodo deposit, add:
+# doi: 10.5281/zenodo.XXXXXXX
