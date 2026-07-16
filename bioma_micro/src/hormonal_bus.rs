@@ -53,7 +53,9 @@ fn valid_mask(n: usize) -> u32 {
 //  HormonalSignal — the lightweight payload on the wire
 // --------------------------------------------------------------------------- //
 /// A single hormonal signal: bitwise channel `flags` (`u32`) + `intensity` (`f32`).
-#[pyclass]
+// from_py_object: keep the pre-0.29 behavior of extracting the struct by value
+// from Python (the bus API receives signals as arguments).
+#[pyclass(from_py_object)]
 #[derive(Clone, Copy)]
 pub struct HormonalSignal {
     #[pyo3(get, set)]
@@ -146,7 +148,7 @@ impl HormonalBus {
 
     /// Inject a typed `HormonalSignal` (the primary API).
     fn inject(&self, py: Python<'_>, signal: HormonalSignal) {
-        py.allow_threads(|| {
+        py.detach(|| {
             self.core.secrete(signal.flags, signal.intensity);
             let _ = self.tx.try_send((signal.flags, signal.intensity));
         });
@@ -154,7 +156,7 @@ impl HormonalBus {
 
     /// Raw injection by `(flags, intensity)` — the microsecond hot path.
     fn secrete(&self, py: Python<'_>, flags: u32, intensity: f32) {
-        py.allow_threads(|| {
+        py.detach(|| {
             self.core.secrete(flags, intensity);
             let _ = self.tx.try_send((flags, intensity));
         });
@@ -162,7 +164,7 @@ impl HormonalBus {
 
     /// Current summed concentration across every channel in `mask`.
     fn sense(&self, py: Python<'_>, mask: u32) -> f32 {
-        py.allow_threads(|| self.core.sense(mask))
+        py.detach(|| self.core.sense(mask))
     }
 
     /// Concentration of a single channel bit.
@@ -176,7 +178,7 @@ impl HormonalBus {
 
     /// Multiplicative decay/dissipation of every channel (temporal homeostasis).
     fn tick(&self, py: Python<'_>, decay: f32) {
-        py.allow_threads(|| self.core.tick(decay));
+        py.detach(|| self.core.tick(decay));
     }
 
     fn snapshot(&self) -> Vec<f32> {

@@ -103,7 +103,7 @@ impl ContextApoptosis {
     fn dehydrate(&self, py: Python<'_>, reinforce_boost: f32) -> usize {
         let factor = 2f32.powf(-1.0 / self.half_life);
         let eps = self.safe_threshold;
-        py.allow_threads(|| {
+        py.detach(|| {
             let mut items = self.items.lock().unwrap();
             for c in items.iter_mut() {
                 if c.signal & PROTECTED != 0 {
@@ -173,7 +173,7 @@ pub fn dehydrate<'py>(
 
     // --- the measured kernel hot-path: decide survivors (pure compute, GIL released) ---
     let t0 = Instant::now();
-    let decisions: Vec<bool> = py.allow_threads(|| {
+    let decisions: Vec<bool> = py.detach(|| {
         let mut keep = Vec::with_capacity(n);
         for (i, (content, signal)) in messages.iter().enumerate() {
             let protected = signal & PROTECTED != 0;
@@ -191,7 +191,7 @@ pub fn dehydrate<'py>(
     let latency_us = t0.elapsed().as_nanos() as f64 / 1000.0;
 
     // --- marshal survivors + audit token savings (not counted in kernel latency) ---
-    let kept = pyo3::types::PyList::empty_bound(py);
+    let kept = pyo3::types::PyList::empty(py);
     let mut tokens_before: u64 = 0;
     let mut tokens_after: u64 = 0;
     let mut purged: usize = 0;
@@ -211,7 +211,7 @@ pub fn dehydrate<'py>(
         1.0 - (tokens_after as f64 / tokens_before as f64)
     };
 
-    let d = PyDict::new_bound(py);
+    let d = PyDict::new(py);
     d.set_item("kept", kept)?;
     d.set_item("blocks_in", n)?;
     d.set_item("blocks_kept", n - purged)?;

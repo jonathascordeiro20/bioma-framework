@@ -3,6 +3,13 @@
 All notable changes to the B.I.O.M.A. distributions (`bioma-framework` and
 `bioma-micro`) are documented here. Versions follow [SemVer](https://semver.org).
 
+## [1.0.1] — 2026-07-16
+
+### bioma-micro 1.0.1
+
+- **security**: PyO3 0.22.6 → 0.29 (clears the Dependabot advisories: 1 high,
+  1 medium, 1 low). No behavior change; full kernel test suite green.
+
 ## [1.0.0] — 2026-07-16
 
 First public release on PyPI, via Trusted Publishing (OIDC).

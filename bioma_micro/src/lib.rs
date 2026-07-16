@@ -35,6 +35,6 @@ fn bioma_micro(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add("TOOL", context_apoptosis::TOOL)?;
 
     m.add("__doc__", "B.I.O.M.A. Micro-Kernel — lock-free hormonal bus + context apoptosis.")?;
-    m.add("__version__", "1.0.0")?;
+    m.add("__version__", "1.0.1")?;
     Ok(())
 }
