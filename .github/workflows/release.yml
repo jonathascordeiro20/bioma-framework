@@ -61,8 +61,11 @@ jobs:
       - uses: actions/upload-artifact@v4
         with: { name: bioma-dist, path: dist/* }
 
-  # ---- publish both projects to PyPI ---------------------------------------
-  publish:
+  # ---- publish to PyPI — one job per project, DISTINCT environments --------
+  # PyPI pending publishers are unique on (owner, repo, workflow, environment)
+  # (warehouse#16920): separate environments let each project have its own
+  # unambiguous Trusted Publishing identity.
+  publish-micro:
     needs: [kernel-wheels, kernel-sdist, bioma-dist]
     runs-on: ubuntu-latest
     environment: pypi
@@ -73,11 +76,21 @@ jobs:
         with: { path: staged }
       - name: Collect bioma_micro artifacts
         run: mkdir -p dist-kernel && find staged -path '*kernel*' -name '*.whl' -o -path '*kernel*' -name '*.tar.gz' | xargs -I{} cp {} dist-kernel/
-      - name: Collect bioma artifacts
-        run: mkdir -p dist-bioma && cp staged/bioma-dist/* dist-bioma/
       - name: Publish bioma_micro
         uses: pypa/gh-action-pypi-publish@release/v1
         with: { packages-dir: dist-kernel, skip-existing: true }
+
+  publish-framework:
+    needs: [kernel-wheels, kernel-sdist, bioma-dist]
+    runs-on: ubuntu-latest
+    environment: pypi-framework
+    permissions:
+      id-token: write   # OIDC for Trusted Publishing
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { path: staged }
+      - name: Collect bioma artifacts
+        run: mkdir -p dist-bioma && cp staged/bioma-dist/* dist-bioma/
       - name: Publish bioma-framework
         uses: pypa/gh-action-pypi-publish@release/v1
         with: { packages-dir: dist-bioma, skip-existing: true }
