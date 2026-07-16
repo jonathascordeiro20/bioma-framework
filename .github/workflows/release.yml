@@ -77,7 +77,7 @@ jobs:
         run: mkdir -p dist-bioma && cp staged/bioma-dist/* dist-bioma/
       - name: Publish bioma_micro
         uses: pypa/gh-action-pypi-publish@release/v1
-        with: { packages-dir: dist-kernel }
-      - name: Publish bioma
+        with: { packages-dir: dist-kernel, skip-existing: true }
+      - name: Publish bioma-framework
         uses: pypa/gh-action-pypi-publish@release/v1
-        with: { packages-dir: dist-bioma }
+        with: { packages-dir: dist-bioma, skip-existing: true }
