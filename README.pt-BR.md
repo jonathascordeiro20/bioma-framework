@@ -3,6 +3,9 @@
 **🌐 [English](README.md) · Português**
 
 [![CI](https://github.com/jonathascordeiro20/bioma-framework/actions/workflows/ci.yml/badge.svg)](https://github.com/jonathascordeiro20/bioma-framework/actions/workflows/ci.yml)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21401899.svg)](https://doi.org/10.5281/zenodo.21401899)
+[![PyPI - bioma-framework](https://img.shields.io/pypi/v/bioma-framework.svg?label=bioma-framework)](https://pypi.org/project/bioma-framework/)
+[![PyPI - bioma-micro](https://img.shields.io/pypi/v/bioma-micro.svg?label=bioma-micro)](https://pypi.org/project/bioma-micro/)
 [![Licença: FSL-1.1-MIT](https://img.shields.io/badge/licen%C3%A7a-FSL--1.1--MIT-blue.svg)](LICENSE)
 ![Feito com Rust + Python](https://img.shields.io/badge/feito%20com-Rust%20%2B%20Python-orange.svg)
 ![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)
