@@ -26,5 +26,4 @@ abstract: >-
   secrets — with a deterministic per-request audit trail. Benchmarks with raw
   data cover an end-to-end A/B against a real coding agent and a head-to-head
   against LLMLingua-2 at matched compression budgets.
-# After the first Zenodo deposit, add:
-# doi: 10.5281/zenodo.XXXXXXX
+doi: 10.5281/zenodo.21401899
