@@ -31,7 +31,10 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           command: build
-          args: --release --out dist --interpreter python3.9 python3.10 python3.11 python3.12 python3.13
+          # abi3 (pyo3/abi3-py38 in Cargo/pyproject): ONE cp38-abi3 wheel per OS covers
+          # CPython >= 3.8 — no per-interpreter list (which breaks on Windows without
+          # PyO3's generate-import-lib).
+          args: --release --out dist
           working-directory: bioma_micro
       - uses: actions/upload-artifact@v4
         with:
