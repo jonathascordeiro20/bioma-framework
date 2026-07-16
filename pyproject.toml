@@ -3,7 +3,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "bioma"
+# PyPI name: `bioma` is squatted since 2017 (dmrib) — the distribution ships as
+# `bioma-framework`; the import stays `import bioma`.
+name = "bioma-framework"
 version = "1.0.0"
 description = "Client-side Frugal-AI layer: context apoptosis that auditably cuts LLM inference cost per deployment."
 readme = "README.md"

@@ -88,9 +88,14 @@ def pytest_green(repo: str) -> bool:
 def run_claude(repo: str, base_url: str, model: str, max_turns: int,
                api_key: str) -> dict:
     env = dict(os.environ)
+    # ANTHROPIC_AUTH_TOKEN → `Authorization: Bearer` incondicional (aceito pelo
+    # OpenRouter e pelo gateway). ANTHROPIC_API_KEY headless exige aprovação
+    # prévia do keychain e o Claude Code silenciosamente NÃO a envia (401
+    # "Missing Authentication header" no braço direto).
+    env.pop("ANTHROPIC_API_KEY", None)
     env.update({
         "ANTHROPIC_BASE_URL": base_url,
-        "ANTHROPIC_API_KEY": api_key,
+        "ANTHROPIC_AUTH_TOKEN": api_key,
         "ANTHROPIC_MODEL": model,
         "ANTHROPIC_SMALL_FAST_MODEL": model,
         "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
@@ -186,7 +191,14 @@ def main() -> int:
     print(f"| Bug resolvido (pytest verde) | {'✅' if a['solved'] else '❌'} "
           f"| {'✅' if b['solved'] else '❌'} |")
     if a["cost"] > 0:
-        print(f"\nEconomia de custo do gateway: **−{(1-b['cost']/a['cost'])*100:.0f}%**")
+        delta = (1 - b["cost"] / a["cost"]) * 100
+        sinal = "economia" if delta >= 0 else "custo EXTRA"
+        print(f"\nCusto estimado pelo Claude Code (contabilidade do CLIENTE, não o billing do "
+              f"provider): {sinal} do gateway de {abs(delta):.0f}%.")
+        if a["turns"] != b["turns"]:
+            print(f"⚠ turnos diferentes ({a['turns']} vs {b['turns']}) — o delta de custo mistura "
+                  "variância do agente com o efeito da apoptose; use o audit + billing do provider "
+                  "para a medição limpa.")
     if red["before"]:
         print(f"\nApoptose no histórico de conversa (audit do braço B, {red['requests']} "
               f"requests): {red['before']:,} → {red['after']:,} tokens "

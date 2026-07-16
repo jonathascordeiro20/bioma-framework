@@ -5,14 +5,25 @@ build-backend = "maturin"
 [project]
 name = "bioma_micro"
 description = "B.I.O.M.A. Micro-Kernel — lock-free hormonal bus + autonomous context apoptosis."
+readme = "README.md"
 requires-python = ">=3.8"
 license = { text = "LicenseRef-FSL-1.1-MIT" }
+authors = [{ name = "Jonathas Cordeiro", email = "jonathas.cordeiro2023@gmail.com" }]
+keywords = ["llm", "context-window", "prompt-compression", "token-optimization", "agents", "rust", "pyo3"]
 classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
     "Programming Language :: Rust",
+    "Programming Language :: Python :: 3",
     "Programming Language :: Python :: Implementation :: CPython",
+    "Operating System :: OS Independent",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 dynamic = ["version"]
 
+[project.urls]
+Repository = "https://github.com/jonathascordeiro20/bioma-framework"
+Changelog = "https://github.com/jonathascordeiro20/bioma-framework/blob/main/CHANGELOG.md"
+
 [tool.maturin]
-features = ["pyo3/extension-module"]
+features = ["pyo3/extension-module", "pyo3/abi3-py38"]

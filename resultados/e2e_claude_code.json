@@ -1,10 +1,22 @@
 {
-  "solved": true,
-  "turns": 9,
-  "cost": 1.0840761,
+  "model": "anthropic/claude-sonnet-5",
+  "A": {
+    "error": null,
+    "cost": 1.11058815,
+    "turns": 6,
+    "in_tok": 19492,
+    "solved": true
+  },
+  "B": {
+    "error": null,
+    "cost": 0.9016054499999999,
+    "turns": 7,
+    "in_tok": 19496,
+    "solved": true
+  },
   "audit": {
-    "before": 36634,
-    "after": 36634,
-    "requests": 8
+    "before": 144066,
+    "after": 112054,
+    "requests": 7
   }
 }

@@ -63,8 +63,62 @@ detecta blocos `tool_use`/`tool_result`) com 2 testes de regressão. Ainda assim
 −0% persistiu — porque a causa real é o auto-gerenciamento do Claude Code, não a
 classificação. Duas hipóteses testadas, uma descartada: rigor nos dois lados.
 
-## Limite declarado
+## Limite declarado (rodada 1)
 
 Não obtivemos o comparativo head-to-head de custo (o braço "direto" bateu 401 —
 quirk de auth do Claude Code → OpenRouter sem o gateway forçar a chave). A
 medição de redução veio do audit do gateway, que é suficiente e mais direta.
+
+---
+
+## Rodada 2 (2026-07-16) — o círculo FECHOU: A/B completo, os dois braços resolveram
+
+**Fix do 401:** o Claude Code headless não envia `ANTHROPIC_API_KEY` sem aprovação
+prévia do keychain (o request sai SEM header de auth → 401 "Missing Authentication
+header"). A correção é `ANTHROPIC_AUTH_TOKEN` (→ `Authorization: Bearer`,
+incondicional), aplicada em `tests/e2e_claude_code.py`.
+
+**Contexto do run:** saldo OpenRouter esgotado no meio da rodada paga (402 com
+Sonnet 5 após $1,84) → A/B executado com `tencent/hy3:free` (262K ctx, tools).
+Free tier = indicativo; repetir com Sonnet 5 após recarga.
+
+| Métrica | A direto | B gateway |
+| :--- | ---: | ---: |
+| Bug resolvido (pytest verde) | ✅ | ✅ |
+| Turnos | 5 | 13 |
+| Custo estimado pelo cliente | $0.83 | $3.06 |
+
+**Apoptose real em sessão longa (audit, 12 requests):** o histórico do braço B
+cresce monotônico 11.663 → 75.866 tokens (est) e o payload dehidratado fica flat
+~11,3–11,7K → purga acumulada **−74%** (497.248 → 127.302). Diferente da rodada 1
+(4 requests, payloads pequenos, −0%): em sessões curtas o Claude Code é enxuto;
+em sessões longas o histórico incha SIM, e a apoptose encontra peso morto.
+
+**Prova de billing (payload idêntico, sintético, mesmo modelo):** direto →
+provider cobrou **4.604** input tokens; via gateway → **32**. A redução chega ao
+faturamento de verdade. (O `in_tok` que o Claude Code reporta é a contabilidade
+LOCAL do cliente sobre o contexto que ele mantém — ele não sabe que o gateway
+podou — por isso 528K ≈ soma dos "before".)
+
+**Achado honesto novo — o default machuca agentes tool-calling:** com
+`safe_threshold=0.35`, até o tool_result MAIS RECENTE é purgado
+(peso 0,25 × 2^(−1/6) = 0,223 < 0,35). O agente fica cego ao resultado da própria
+ferramenta, refaz trabalho (13 vs 5 turnos) e reenvia o system prompt gigante a
+cada request extra → **para o Claude Code o efeito líquido pode ser negativo**.
+Medido localmente: `safe_threshold=0.2` preserva o tool_result fresco mantendo
+−91% de redução no sintético. Recomendação: `BIOMA_SAFE_THRESHOLD=0.2` para
+clientes agênticos; 0,35 só para chat/sessões sem tool-calling denso.
+
+## Rodada 3 (definitiva) — Sonnet 5 real, threshold 0.2
+
+| Métrica | A direto | B gateway |
+| :--- | ---: | ---: |
+| Bug resolvido (pytest verde) | ✅ | ✅ |
+| Turnos | 6 | 7 |
+| Custo estimado pelo cliente | $1.11 | **$0.90 (−19%)** |
+
+Audit (7 requests): reqs 1–4 sem purga (janela de trabalho preservada),
+reqs 5–7 purgando 23% → 47% conforme os blocos envelhecem; total
+**144.066 → 112.054 (−22%)**. O tuning 0.2 elimina o retrabalho observado na
+rodada 2 e vira o sinal do custo. Gasto real (billing OpenRouter): ~$1,34.
+Consolidado em `reports/BIOMA_BENCHMARK_COMPARATIVO.md`.
