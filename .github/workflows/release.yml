@@ -61,6 +61,17 @@ jobs:
       - uses: actions/upload-artifact@v4
         with: { name: bioma-dist, path: dist/* }
 
+  # ---- LangChain integration (pure Python) ---------------------------------
+  langchain-dist:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install build && python -m build --outdir dist integrations/bioma-langchain
+      - uses: actions/upload-artifact@v4
+        with: { name: langchain-dist, path: dist/* }
+
   # ---- publish to PyPI — one job per project, DISTINCT environments --------
   # PyPI pending publishers are unique on (owner, repo, workflow, environment)
   # (warehouse#16920): separate environments let each project have its own
@@ -79,6 +90,21 @@ jobs:
       - name: Publish bioma_micro
         uses: pypa/gh-action-pypi-publish@release/v1
         with: { packages-dir: dist-kernel, skip-existing: true }
+
+  publish-langchain:
+    needs: [langchain-dist]
+    runs-on: ubuntu-latest
+    environment: pypi-langchain
+    permissions:
+      id-token: write   # OIDC for Trusted Publishing
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { path: staged }
+      - name: Collect bioma-langchain artifacts
+        run: mkdir -p dist-langchain && cp staged/langchain-dist/* dist-langchain/
+      - name: Publish bioma-langchain
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with: { packages-dir: dist-langchain, skip-existing: true }
 
   publish-framework:
     needs: [kernel-wheels, kernel-sdist, bioma-dist]
