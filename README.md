@@ -13,6 +13,8 @@
 
 **A local, provider-agnostic efficiency & security micro-kernel for LLM applications.**
 
+📖 Full technical guide (architecture, enterprise deployment, tuning): [TECHNICAL_GUIDE.pt-BR.md](TECHNICAL_GUIDE.pt-BR.md)
+
 <p align="center">
   <img src="assets/bioma-concept-map.png" width="760"
        alt="B.I.O.M.A. concept map: what it is, its three mechanisms (context apoptosis, cognitive firewall, hormonal bus), what it honestly generates, and why sovereignty depends on where the model runs.">

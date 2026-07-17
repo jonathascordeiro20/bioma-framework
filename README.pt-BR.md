@@ -13,6 +13,8 @@
 
 **Um micro-kernel local, provider-agnóstico, de eficiência e segurança para aplicações de LLM.**
 
+📖 Guia técnico completo (arquitetura, deployment empresarial, tuning): [TECHNICAL_GUIDE.pt-BR.md](TECHNICAL_GUIDE.pt-BR.md)
+
 <p align="center">
   <img src="assets/bioma-concept-map.png" width="760"
        alt="Mapa conceitual do B.I.O.M.A.: o que é, os três mecanismos (apoptose de contexto, firewall cognitivo, barramento hormonal), o que ele realmente gera, e por que a soberania depende de onde o modelo roda.">
