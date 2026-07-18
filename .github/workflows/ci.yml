@@ -40,8 +40,14 @@ jobs:
           PY
       - name: Run lean unit tests (kernel + firewall + server)
         run: |
-          pip install pytest fastapi "uvicorn[standard]" httpx "openai>=1" "anthropic>=0.40" python-dotenv "pydantic>=2"
-          python -m pytest tests/test_kernel.py tests/test_firewall.py tests/test_server.py tests/test_esg.py tests/test_esg_report.py tests/test_gateway.py -q
+          pip install pytest fastapi "uvicorn[standard]" httpx "openai>=1" "anthropic>=0.40" python-dotenv "pydantic>=2" "rich>=13.7"
+          python -m pytest tests/test_kernel.py tests/test_firewall.py tests/test_server.py tests/test_esg.py tests/test_esg_report.py tests/test_gateway.py tests/test_monitor.py tests/test_suite_doctor.py -q
+      - name: Suite meta-package installs and bioma-doctor passes
+        # --no-deps: the components are already in this env; this proves the
+        # meta-package's own packaging + the console entry point end-to-end.
+        run: |
+          pip install --no-deps . ./bioma_suite
+          bioma-doctor
 
   docker-image:
     runs-on: ubuntu-latest

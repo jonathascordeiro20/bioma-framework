@@ -104,11 +104,17 @@ alegação por deployment — não global; escala com adoção e com o seu grid.
 ## Instalação
 
 ```bash
+pip install bioma-suite                # TUDO num comando só (depois: bioma-doctor)
 pip install bioma-framework            # core: micro-kernel Rust + API Python
 pip install "bioma-framework[gateway]"   # + o gateway drop-in OpenAI/Anthropic
-pip install "bioma-framework[all]"       # + client, anthropic e o tier de visão
+pip install "bioma-framework[all]"       # + client, anthropic, visão e monitor
 # só o kernel (sem a camada Python): pip install bioma-micro
 ```
+
+O `bioma-suite` é o meta-pacote de instalação única: um comando puxa o kernel,
+o framework com todos os tiers e a integração LangChain — e traz o
+`bioma-doctor`, um checkup só-stdlib que verifica cada componente e roda um
+smoke test real do kernel (exit 0 = core saudável).
 
 O install core já traz o kernel Rust compilado (`bioma_micro`) como wheel binário
 — sem toolchain Rust. Os extras (`gateway`, `client`, `anthropic`, `vision`) são
@@ -133,11 +139,30 @@ Opcional: um runner FastAPI local (`bioma.server`, `GET /health` + `POST /v1/dis
 uma imagem de container local (`deploy/Dockerfile.lean`) estão inclusos — sem serviço
 hospedado.
 
+## Monitor ao vivo — o cockpit de terminal
+
+Acompanhe tudo que o deployment mede, em tempo real, no terminal:
+
+```bash
+pip install "bioma-framework[monitor]"
+bioma-monitor                            # segue o bioma_gateway_audit.jsonl ao vivo
+bioma-monitor --grid br --price-in 2.0   # + estimativas ESG / $ com limites
+```
+
+O `bioma-monitor` segue o mesmo audit JSONL por requisição que o gateway grava
+(`BIOMA_AUDIT_LOG`): totais da sessão, sparkline de redução, μs do kernel
+(p50/máx), tabela por modelo, feed de requests e o status `/health` do gateway.
+Todo número na tela é um número do log; o painel de energia/custo reutiliza o
+estimador de coeficientes declarados de `bioma.esg` e é sempre rotulado como
+estimativa. `--tail` começa do fim do log (só tráfego ao vivo); `--once`
+renderiza um frame único (para CI/screenshot).
+
 ## Estrutura
 
 ```
 bioma_micro/   micro-kernel Rust/PyO3 — barramento hormonal + apoptose + saturation_scan
-bioma/         Python: CognitiveFirewall, LeanOpenRouterClient, servidor local
+bioma/         Python: CognitiveFirewall, LeanOpenRouterClient, servidor local, monitor
+bioma_suite/   meta-pacote de instalação única (`pip install bioma-suite`) + bioma-doctor
 tests/         suíte unitária (kernel, firewall, server) + validações reais end-to-end
 FINDINGS.md    avaliação ground-truth (provado / refutado), reproduzível
 reports/       veredito de imunidade (APT war-game)

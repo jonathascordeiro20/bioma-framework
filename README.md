@@ -92,11 +92,17 @@ k.saturation_scan(payload)     # cognitive-DDoS score 0..1 (flood ≈ 1.0)
 ## Install
 
 ```bash
+pip install bioma-suite                # EVERYTHING in one command (then: bioma-doctor)
 pip install bioma-framework            # core: the Rust micro-kernel + Python API
 pip install "bioma-framework[gateway]"   # + the drop-in OpenAI/Anthropic gateway
-pip install "bioma-framework[all]"       # + client, anthropic, and the vision tier
+pip install "bioma-framework[all]"       # + client, anthropic, vision and monitor tiers
 # kernel only (no Python layer): pip install bioma-micro
 ```
+
+`bioma-suite` is the one-shot meta-package: a single install pulls the kernel,
+the framework with every tier, and the LangChain integration — and ships
+`bioma-doctor`, a stdlib-only checkup that verifies each component imports and
+runs a real kernel smoke test (exit 0 = core healthy).
 
 The core install ships the compiled Rust kernel (`bioma_micro`) as a binary
 wheel — no Rust toolchain required. Extras (`gateway`, `client`, `anthropic`,
@@ -159,6 +165,24 @@ audit log — the design-partner instrument (`bioma/esg_report.py`). A ready-to-
 NVIDIA-GPU energy harness (`tests/measure_energy_gpu.py`) awaits datacenter
 hardware; it fabricates no numbers without a GPU.
 
+## Live monitor — the terminal cockpit
+
+Watch everything the deployment measures, in real time, from the terminal:
+
+```bash
+pip install "bioma-framework[monitor]"
+bioma-monitor                            # follows bioma_gateway_audit.jsonl live
+bioma-monitor --grid br --price-in 2.0   # + bounded ESG / $ estimates
+```
+
+`bioma-monitor` tails the same per-request audit JSONL the gateway writes
+(`BIOMA_AUDIT_LOG`) — session totals, a reduction sparkline, kernel μs p50/max,
+a per-model table, a request feed, and the gateway's `/health` status. Every
+number on screen is a number in the log; the energy/cost panel reuses the
+declared-coefficient estimator from `bioma.esg` and is always labeled an
+estimate. `--tail` starts at the end of the log (live traffic only); `--once`
+renders a single frame (CI/screenshot-friendly).
+
 ## Quickstart (local)
 
 ```bash
@@ -180,7 +204,8 @@ service required.
 
 ```
 bioma_micro/   Rust/PyO3 micro-kernel — hormonal bus + apoptosis + saturation_scan
-bioma/         Python: CognitiveFirewall, LeanOpenRouterClient, local server
+bioma/         Python: CognitiveFirewall, LeanOpenRouterClient, local server, monitor
+bioma_suite/   one-shot meta-package (`pip install bioma-suite`) + bioma-doctor
 tests/         unit suite (kernel, firewall, server) + real end-to-end validations
 FINDINGS.md    ground-truth evaluation (proven / refuted), reproducible
 reports/       immunity verdict (APT war-game)

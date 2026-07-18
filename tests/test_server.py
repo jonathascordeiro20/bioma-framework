@@ -3,12 +3,23 @@ TestClient. Forced offline (no key) so `/v1/dispatch` runs the apoptosis-only
 path — deterministic, no network."""
 import os
 
+import pytest
+
 # Force the server offline before its lifespan reads the environment.
 os.environ.pop("OPENROUTER_API_KEY", None)
 
 from fastapi.testclient import TestClient  # noqa: E402
 
 from bioma.server import app  # noqa: E402
+
+
+@pytest.fixture(autouse=True)
+def _offline(monkeypatch):
+    # The pop above runs at import time, but collecting OTHER test modules can
+    # re-populate the key afterwards (importing bioma.gateway runs load_dotenv,
+    # which reads a local .env). The lifespan reads the env at TestClient enter,
+    # i.e. at test time — so clear the key at test time too.
+    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
 
 
 def test_health_reports_lean_topology():

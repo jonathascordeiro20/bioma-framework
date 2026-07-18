@@ -3,6 +3,30 @@
 All notable changes to the B.I.O.M.A. distributions (`bioma-framework` and
 `bioma-micro`) are documented here. Versions follow [SemVer](https://semver.org).
 
+## [Unreleased]
+
+### bioma-suite 1.0.0 (new distribution)
+
+- One-shot meta-package: `pip install bioma-suite` pulls `bioma_micro`,
+  `bioma-framework[all]` and `bioma-langchain` in a single command.
+- `bioma-doctor` — stdlib-only install checkup: per-component import + version
+  report and a real kernel smoke test (exit 0 = core healthy).
+- Release: new `pypi-suite` environment in `release.yml` (one Trusted
+  Publishing environment per package); publishes after the components so the
+  pinned versions are always resolvable.
+
+### bioma-framework 1.1.0
+
+- `bioma.monitor` — live terminal cockpit (`bioma-monitor`, extra `[monitor]`):
+  follows the gateway's per-request audit JSONL in real time (`tail -f`
+  semantics, rotation-safe) — session totals, reduction sparkline, kernel μs
+  p50/max, per-model table, request feed, gateway `/health` status, and the
+  bounded ESG / cost estimate from `bioma.esg` (always labeled an estimate).
+  `--tail` (live traffic only), `--once` (single frame, CI-friendly).
+- tests: `tests/test_server.py` now clears `OPENROUTER_API_KEY` at test time
+  (autouse fixture) — the full-suite run is deterministic even when a local
+  `.env` holds a real key (importing `bioma.gateway` runs `load_dotenv`).
+
 ## [1.0.1] — 2026-07-16
 
 ### bioma-micro 1.0.1

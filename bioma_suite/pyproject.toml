@@ -1,0 +1,42 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+# The one-shot install: everything in the B.I.O.M.A. stack with a single
+# `pip install bioma-suite` — kernel, framework (gateway + client + anthropic +
+# vision + monitor), and the LangChain integration.
+name = "bioma-suite"
+version = "1.0.0"
+description = "One install for the whole B.I.O.M.A. stack: Rust kernel + framework (gateway, clients, vision, live monitor) + LangChain integration."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "LicenseRef-FSL-1.1-MIT" }
+authors = [{ name = "Jonathas Cordeiro", email = "jonathas.cordeiro2023@gmail.com" }]
+keywords = ["llm", "tokens", "cost", "frugal-ai", "gateway", "bioma", "meta-package"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Intended Audience :: Developers",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+# bioma-framework[all] >= 1.1.0: first release whose `all` extra ships the
+# live monitor (rich). The kernel comes transitively but is pinned explicitly
+# so `pip install bioma-suite` states the full stack in one place.
+dependencies = [
+    "bioma_micro>=1.0.1",
+    "bioma-framework[all]>=1.1.0",
+    "bioma-langchain>=0.1.0",
+]
+
+[project.scripts]
+bioma-doctor = "bioma_suite.doctor:_main"
+
+[project.urls]
+Homepage = "https://github.com/jonathascordeiro20/bioma-framework"
+Repository = "https://github.com/jonathascordeiro20/bioma-framework"
+
+[tool.hatch.build.targets.wheel]
+packages = ["bioma_suite"]
+
+[tool.hatch.build.targets.sdist]
+include = ["bioma_suite", "README.md"]

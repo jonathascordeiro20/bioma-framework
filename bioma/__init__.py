@@ -15,7 +15,7 @@ lazily, so `import bioma` stays light for kernel-only use.
 import bioma_micro as kernel  # the compiled Rust micro-kernel
 
 __all__ = ["kernel", "LeanOpenRouterClient", "Dispatch"]
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 
 
 def __getattr__(name: str):

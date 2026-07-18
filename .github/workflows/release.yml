@@ -72,6 +72,17 @@ jobs:
       - uses: actions/upload-artifact@v4
         with: { name: langchain-dist, path: dist/* }
 
+  # ---- Suite meta-package (pure Python) ------------------------------------
+  suite-dist:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install build && python -m build --outdir dist bioma_suite
+      - uses: actions/upload-artifact@v4
+        with: { name: suite-dist, path: dist/* }
+
   # ---- publish to PyPI — one job per project, DISTINCT environments --------
   # PyPI pending publishers are unique on (owner, repo, workflow, environment)
   # (warehouse#16920): separate environments let each project have its own
@@ -120,3 +131,20 @@ jobs:
       - name: Publish bioma-framework
         uses: pypa/gh-action-pypi-publish@release/v1
         with: { packages-dir: dist-bioma, skip-existing: true }
+
+  publish-suite:
+    # After the components: the meta-package must never land on PyPI before the
+    # versions it pins are resolvable.
+    needs: [suite-dist, publish-micro, publish-framework, publish-langchain]
+    runs-on: ubuntu-latest
+    environment: pypi-suite
+    permissions:
+      id-token: write   # OIDC for Trusted Publishing
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { path: staged }
+      - name: Collect bioma-suite artifacts
+        run: mkdir -p dist-suite && cp staged/suite-dist/* dist-suite/
+      - name: Publish bioma-suite
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with: { packages-dir: dist-suite, skip-existing: true }
