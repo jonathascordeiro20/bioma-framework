@@ -183,6 +183,31 @@ declared-coefficient estimator from `bioma.esg` and is always labeled an
 estimate. `--tail` starts at the end of the log (live traffic only); `--once`
 renders a single frame (CI/screenshot-friendly).
 
+## Auditable carbon ledger — a signed, verifiable savings report
+
+A carbon or cost number is only credible if a third party can verify it. The
+carbon ledger turns the gateway's measured audit log into a **signed,
+tamper-evident** report — the instrument a CFO, a CSRD assessor or an external
+auditor can check without trusting you:
+
+```bash
+pip install "bioma-framework[ledger]"
+bioma-carbon-ledger keygen --out issuer                       # Ed25519 keypair
+bioma-carbon-ledger build bioma_gateway_audit.jsonl \
+    --grid br --price-in 2.0 --key issuer.key --out ledger.json
+bioma-carbon-ledger verify ledger.json --pub issuer.pub --audit bioma_gateway_audit.jsonl
+```
+
+Four properties make it auditable: tokens are **measured** ground truth; the
+audit rows are **hash-chained** (altering or dropping any row breaks the chain);
+the finished ledger is **Ed25519-signed** (verified with the public key alone);
+and energy uses the **declared, versioned** coefficient bounds from `bioma.esg`
+(low/mid/high — the reduction % is exact, only the absolute Wh/CO2e inherit the
+coefficient's uncertainty). `verify` catches both attacks: forging a signed
+number → `signature INVALID`; tampering the audit → `recompute MISMATCH`.
+Emissions are reported as an **avoided-emissions counterfactual**, separately —
+never netted against Scope 1/2/3 and never called an offset (GHG Protocol).
+
 ## Quickstart (local)
 
 ```bash
