@@ -39,6 +39,32 @@ carbon ledger** an external auditor can verify without trusting you.
 
 ---
 
+## How it works — in plain English
+
+**Think of it as an editor for the conversation.** Before each message goes to the AI, B.I.O.M.A. trims the
+parts of the chat history that no longer matter — the way you'd cut a long email thread down to the one
+relevant reply before forwarding it. You get **the same answer**; you just stop paying to re-send the whole
+thread, every single turn.
+
+<p align="center">
+  <img src="assets/how-it-works.png" width="900"
+       alt="How B.I.O.M.A. works: every AI turn re-sends the whole chat (most of it stale); B.I.O.M.A. trims it in about one microsecond inside your app; the model receives a small clean payload and returns the same answer — with ~84% fewer tokens and less cost, energy and carbon.">
+</p>
+
+1. **The problem** — an AI model remembers nothing between messages, so your app re-sends the *entire*
+   conversation every turn. In real sessions, 50–60% of that is stale filler that just runs up the bill.
+2. **B.I.O.M.A.** — a tiny, fast component inside your own app deletes the stale history in about a
+   millionth of a second, keeping the system instructions and what's actually relevant. No AI model is
+   involved in the trimming; your provider, keys, and code stay exactly the same.
+3. **What's sent** — a small, clean payload. The model answers exactly as it would have — you just paid to
+   send a paragraph instead of the whole thread.
+
+And because none of this matters if you can't prove it, B.I.O.M.A. writes down every trim and can produce a
+**digitally signed report** of the tokens, cost, and carbon saved — one a third party (an auditor, a
+journalist, a regulator) can verify without taking your word for it.
+
+---
+
 ## By the numbers — all measured, all reproducible
 
 From a paired A/B benchmark: **8 models × 30 coding tasks × 3 reps = 1,440 real API calls.**
