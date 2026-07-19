@@ -125,6 +125,35 @@ def print_report(reports: list[dict], rows: list[dict]) -> None:
               f"{rep['gco2e_saved_mid']:.2f} gCO2e")
         print()
 
+    # stale_ratio breakdown (pooled across models)
+    by_stale = defaultdict(list)
+    index = defaultdict(dict)
+    for r in rows:
+        index[(r["model"], r["task"], r.get("rep", 0))][r["arm"]] = r
+    for arms in index.values():
+        if "baseline" in arms and "bioma" in arms and arms["baseline"].get("stale_ratio"):
+            by_stale[arms["baseline"]["stale_ratio"]].append(
+                (arms["baseline"], arms["bioma"]))
+    if by_stale:
+        print("== by stale_ratio (all models pooled) ==")
+        header = f"{'stale':>7} {'pairs':>5} {'tok red %':>9} {'ci95':>16} " \
+                 f"{'succ A':>6} {'succ B':>6}"
+        print(header)
+        print("-" * len(header))
+        for label in ("high", "medium", "low"):
+            pairs = by_stale.get(label)
+            if not pairs:
+                continue
+            a = np.array([p[0]["input_tokens"] for p in pairs], dtype=float)
+            b = np.array([p[1]["input_tokens"] for p in pairs], dtype=float)
+            red = np.where(a > 0, (a - b) / a * 100.0, 0.0)
+            lo, hi = bootstrap_ci(red)
+            sa = np.mean([p[0]["success"] for p in pairs])
+            sb = np.mean([p[1]["success"] for p in pairs])
+            print(f"{label:>7} {len(pairs):>5} {red.mean():>8.1f}% "
+                  f"[{lo:>6.1f}, {hi:>5.1f}] {sa:>6.0%} {sb:>6.0%}")
+        print()
+
     # cross-tier table
     print("== cross-tier summary ==")
     header = f"{'model':>14} {'tier':>9} {'pairs':>5} {'tok red %':>9} " \

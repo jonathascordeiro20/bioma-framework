@@ -24,7 +24,10 @@ import argparse
 import json
 import os
 import pathlib
+import re
+import subprocess
 import sys
+import tempfile
 import time
 
 import yaml
@@ -121,10 +124,43 @@ PROVIDERS = {"anthropic": call_anthropic, "openai_compatible": call_openai_compa
 # --------------------------------------------------------------------------- #
 # success gate
 # --------------------------------------------------------------------------- #
-def evaluate_success(task: dict, text: str) -> dict:
-    """Keyword gate: every success_keyword must appear in the response."""
+PY_BLOCK = re.compile(r"```python\n(.*?)```", re.DOTALL)
+
+
+def _keyword_gate(task: dict, text: str, gate_name: str = "keywords") -> dict:
     hits = {k: (k in text) for k in task["success_keywords"]}
-    return {"success": all(hits.values()), "gate": "keywords", "keyword_hits": hits}
+    return {"success": all(hits.values()), "gate": gate_name, "keyword_hits": hits}
+
+
+def evaluate_success(task: dict, text: str) -> dict:
+    """Executable gate when the task has test_code, keyword gate otherwise.
+
+    The solution is the FIRST ```python block of the model response; it is
+    written to solution.py next to the task's pytest file and executed in a
+    subprocess with a 30s timeout. Responses without a python block fall back
+    to the keyword gate (marked keywords_fallback).
+    """
+    test_code = task.get("test_code")
+    if not test_code:
+        return _keyword_gate(task, text)
+
+    match = PY_BLOCK.search(text)
+    if not match:
+        return _keyword_gate(task, text, "keywords_fallback")
+
+    with tempfile.TemporaryDirectory(prefix="ab-gate-") as tmp:
+        pathlib.Path(tmp, "solution.py").write_text(match.group(1))
+        pathlib.Path(tmp, "test_solution.py").write_text(test_code)
+        try:
+            proc = subprocess.run(
+                [sys.executable, "-m", "pytest", "-x", "-q", "--no-header", "-p", "no:cacheprovider"],
+                cwd=tmp, capture_output=True, text=True, timeout=30,
+            )
+        except subprocess.TimeoutExpired:
+            return {"success": False, "gate": "pytest", "pytest_timeout": True}
+    tail = (proc.stdout + proc.stderr)[-400:]
+    return {"success": proc.returncode == 0, "gate": "pytest",
+            "pytest_returncode": proc.returncode, "pytest_tail": tail}
 
 
 # --------------------------------------------------------------------------- #
