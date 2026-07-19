@@ -9,6 +9,6 @@ This package ships no runtime of its own: it pins the full dependency set
 everything, and provides `bioma-doctor` — a stdlib-only checkup that reports
 which components are importable, their versions, and a real kernel smoke test.
 """
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 
 __all__ = ["__version__"]

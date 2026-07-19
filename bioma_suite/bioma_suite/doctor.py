@@ -39,6 +39,7 @@ COMPONENTS: dict[str, tuple[str, tuple[str, ...]]] = {
     "client (anthropic)":        ("anthropic", ("anthropic",)),
     "vision":                    ("rapidocr-onnxruntime", ("PIL", "imagehash", "rapidocr_onnxruntime", "cv2", "numpy")),
     "monitor":                   ("rich", ("rich",)),
+    "carbon ledger":             ("cryptography", ("cryptography", "bioma.carbon_ledger")),
     "langchain integration":     ("bioma-langchain", ("bioma_langchain", "langchain_core")),
 }
 CORE = ("kernel (bioma_micro)", "framework (import bioma)")

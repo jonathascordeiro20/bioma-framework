@@ -7,7 +7,7 @@ build-backend = "hatchling.build"
 # `pip install bioma-suite` — kernel, framework (gateway + client + anthropic +
 # vision + monitor), and the LangChain integration.
 name = "bioma-suite"
-version = "1.0.0"
+version = "1.0.1"
 description = "One install for the whole B.I.O.M.A. stack: Rust kernel + framework (gateway, clients, vision, live monitor) + LangChain integration."
 readme = "README.md"
 requires-python = ">=3.9"

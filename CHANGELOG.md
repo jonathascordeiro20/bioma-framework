@@ -15,6 +15,11 @@ All notable changes to the B.I.O.M.A. distributions (`bioma-framework` and
   (`signature INVALID`) and a tampered audit (`recompute MISMATCH`). Avoided
   emissions reported as a counterfactual, never netted against Scope 1/2/3.
 
+### bioma-suite 1.0.1
+
+- `bioma-doctor` now verifies the **carbon ledger** tier (cryptography +
+  `bioma.carbon_ledger`) alongside the existing components.
+
 ## [1.1.0] — 2026-07-18
 
 ### bioma-suite 1.0.0 (new distribution)
