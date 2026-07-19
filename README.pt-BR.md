@@ -69,7 +69,7 @@ jornalista, um regulador) verifica sem precisar acreditar na sua palavra.
 ## Em números — tudo medido, tudo reproduzível
 
 De um benchmark A/B pareado: **8 modelos × 30 tarefas de código × 3 reps = 1.440 chamadas reais de API.**
-Dados brutos, código e gráficos em [`benchmarks/ab-claude-code`](benchmarks/ab-claude-code/results/RESULTS.md).
+Dados brutos, código e gráficos em [`benchmarks/ab-publico`](benchmarks/ab-publico/results/RESULTS.md).
 
 | | |
 |---|---|
@@ -86,21 +86,21 @@ Dados brutos, código e gráficos em [`benchmarks/ab-claude-code`](benchmarks/ab
 
 **Um shield, todos os modelos.** Tokens de entrada medianos por tarefa, baseline vs. BIOMA:
 
-![Tokens de entrada por tarefa, baseline vs BIOMA](benchmarks/ab-claude-code/results/charts/hero_cross_model.png)
+![Tokens de entrada por tarefa, baseline vs BIOMA](benchmarks/ab-publico/results/charts/hero_cross_model.png)
 
 **"Mas o caching nativo é grátis — por que me importar?"** Rodamos isso como experimento próprio. O BIOMA é
 mais barato *em cima* do caching, e no modelo de ponta vence em **todo** comprimento de sessão:
 
-![Economia em cima do caching](benchmarks/ab-claude-code/results/charts/savings_on_top_of_caching.png)
+![Economia em cima do caching](benchmarks/ab-publico/results/charts/savings_on_top_of_caching.png)
 
 **Sessões reais crescem.** O caching desconta o preço do histórico, mas o modelo ainda o *carrega*. A
 apoptose o mantém limitado — a curva do BIOMA literalmente dobra para baixo enquanto o baseline sobe:
 
-![Conversa que cresce](benchmarks/ab-claude-code/results/charts/growing_conversation_cost.png)
+![Conversa que cresce](benchmarks/ab-publico/results/charts/growing_conversation_cost.png)
 
 *(Publicamos também o gráfico que impede uma manchete inflada — a economia depende de quão obsoleto é o seu
 contexto — para você localizar o seu próprio workload em vez de confiar num único número:
-[`reduction_by_stale_ratio.png`](benchmarks/ab-claude-code/results/charts/reduction_by_stale_ratio.png).)*
+[`reduction_by_stale_ratio.png`](benchmarks/ab-publico/results/charts/reduction_by_stale_ratio.png).)*
 
 ---
 
@@ -200,7 +200,7 @@ para Linux/macOS/Windows — sem toolchain Rust para instalar.
 
 ## Prova e reprodutibilidade
 
-- **[`benchmarks/ab-claude-code/results/RESULTS.md`](benchmarks/ab-claude-code/results/RESULTS.md)** — o writeup completo: metodologia, o dataset de 1.440 chamadas, os experimentos de caching, cada gráfico e as limitações honestas.
+- **[`benchmarks/ab-publico/results/RESULTS.md`](benchmarks/ab-publico/results/RESULTS.md)** — o writeup completo: metodologia, o dataset de 1.440 chamadas, os experimentos de caching, cada gráfico e as limitações honestas.
 - **[`FINDINGS.md`](FINDINGS.md)** — avaliação ground-truth, incluindo o que testamos e **refutamos** (a "mitose" multi-LLM não melhora qualidade — por isso não está no produto).
 - **Snapshot citável:** [Zenodo DOI 10.5281/zenodo.21401899](https://doi.org/10.5281/zenodo.21401899).
 - Todo número acima traça até um arquivo do repo. Reproduções que discordem são bem-vindas — resultados divergentes são linkados aqui.

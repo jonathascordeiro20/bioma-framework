@@ -13,4 +13,4 @@ caveat: task histories cap at 36-50 turns, so the last 1-2 steps plateau
 divergence is the clean signal: caching discounts price but the model still
 carries the full context (latency, window pressure, decode energy).
 
-wrote benchmarks/ab-claude-code/results/charts/growing_conversation_cost.png
+wrote benchmarks/ab-publico/results/charts/growing_conversation_cost.png

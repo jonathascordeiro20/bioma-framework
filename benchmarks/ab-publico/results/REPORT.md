@@ -227,7 +227,7 @@ Ressalva importante: **3 das 5 maiores perdas são do fable-5** e estão **entre
 - **Aproximação de tokens.** O `estimate_cost.py` e o fallback usam tiktoken/4-chars-por-token; mas os `input_tokens`/`output_tokens` do dataset e o `cost_usd` vêm do **usage real** de cada resposta, então as métricas do relatório não dependem da aproximação.
 - **Correções de slug (passo 2).** **Nenhuma necessária** — os 8 `openrouter_id` do `models.yaml` existem no catálogo real do OpenRouter, incluindo `google/gemini-3.1-pro-preview`.
 - **Energia (Wh/gCO2e).** Estimativa via coeficientes de literatura declarados em `bioma.esg` (0,5–1,3 kWh/Mtok); os tokens são medidos, a conversão é estimada com limites — nunca inventada.
-- **Ajustes de harness feitos nesta execução** (dentro de `benchmarks/ab-claude-code/`, sem tocar tarefa/shield/keywords):
+- **Ajustes de harness feitos nesta execução** (dentro de `benchmarks/ab-publico/`, sem tocar tarefa/shield/keywords):
   1. **Fix de encoding no gate** — `evaluate_success` gravava `solution.py` em cp1252 (default do Windows) e crashava quando o código do modelo continha caracteres não-Latin-1 (ex.: `→`), virando falha espúria. Corrigido para `encoding="utf-8"`.
   2. **Captura de recusa** — o runner agora grava `refusal` + `finish_reason` verbatim (antes a recusa virava resposta vazia inexplicada).
   3. **Captura de custo real** — grava o `cost_usd` reportado pelo OpenRouter por chamada (base da §1).

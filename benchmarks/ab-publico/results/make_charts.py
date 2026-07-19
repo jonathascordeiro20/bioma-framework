@@ -42,7 +42,7 @@ from matplotlib.patches import Patch  # noqa: E402
 from matplotlib.lines import Line2D  # noqa: E402
 
 ROOT = pathlib.Path(__file__).resolve().parent          # .../results
-BENCH = ROOT.parent                                      # .../ab-claude-code
+BENCH = ROOT.parent                                      # .../ab-publico
 CHARTS = ROOT / "charts"
 REPO = "jonathascordeiro20/bioma-framework"
 PRICE_DATE = "2026-07-19"                                # date list prices were read from the OpenRouter catalog
@@ -184,7 +184,7 @@ def footer(ax_or_fig, n_tasks: int, reps: int, temp: float):
     ax_or_fig.text(
         0.005, 0.005,
         f"Paired A/B, N={n_tasks} tasks, {reps} reps, temperature={temp}. "
-        f"Raw data & methodology: github.com/{REPO}/benchmarks/ab-claude-code",
+        f"Raw data & methodology: github.com/{REPO}/benchmarks/ab-publico",
         transform=ax_or_fig.transFigure, fontsize=7, color="#6b7280", ha="left", va="bottom")
 
 
@@ -488,7 +488,7 @@ def write_table(stats, prices, n_tasks, reps, temp) -> pathlib.Path:
         f"Reduction = input-token reduction, median over pairs with bootstrap 95% CI. "
         f"$ saved extrapolates the measured mean input-token saving × models.yaml "
         f"input price to 1,000 sessions (list prices {PRICE_DATE}). "
-        f"Raw data & methodology: github.com/{REPO}/benchmarks/ab-claude-code._",
+        f"Raw data & methodology: github.com/{REPO}/benchmarks/ab-publico._",
         "",
     ]
     out = CHARTS / "summary_table.md"

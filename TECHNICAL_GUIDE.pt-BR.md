@@ -185,15 +185,15 @@ Sem toolchain Rust necessário (wheels binários). Fontes:
 | Cenário | Resultado | Fonte no repo |
 | :--- | :--- | :--- |
 | Sessão longa genérica (16 rodadas, reenvia tudo) | **−95,8%** input, paridade de resposta | `test_enxuto_efficiency.py` |
-| Agente tool-calling ingênuo (histórico acumulado) | **−84%** | `benchmarks/ab-claude-code/results/RESULTS.md` |
-| Claude Code real, sessão longa, threshold 0.2 | **−22%** histórico, tarefa resolvida nos 2 braços, custo estimado −19% | `benchmarks/ab-claude-code/results/RESULTS.md` |
+| Agente tool-calling ingênuo (histórico acumulado) | **−84%** | `benchmarks/ab-publico/results/RESULTS.md` |
+| Claude Code real, sessão longa, threshold 0.2 | **−22%** histórico, tarefa resolvida nos 2 braços, custo estimado −19% | `benchmarks/ab-publico/results/RESULTS.md` |
 | Claude Code, sessão curta | **~0% (no-op seguro)** | idem |
 | Billing real do provider, payload idêntico | **4.604 → 32** input tokens | idem |
-| Interação com prompt caching | compõem-se: −76% de custo com cache ativo | `benchmarks/ab-claude-code/results/cached/ANALYSIS_CACHED.txt` |
+| Interação com prompt caching | compõem-se: −76% de custo com cache ativo | `benchmarks/ab-publico/results/cached/ANALYSIS_CACHED.txt` |
 | Qualidade sob apoptose (6 modelos reais, probes objetivas) | paridade 100% em S1/S2; S3 purga by design | `reports/BIOMA_QUALITY_PRESERVATION.md` |
 
 Relatório consolidado com todas as ressalvas:
-`benchmarks/ab-claude-code/results/RESULTS.md`.
+`benchmarks/ab-publico/results/RESULTS.md`.
 
 ---
 
@@ -330,6 +330,6 @@ produto concorrente; **cada versão converte para MIT após 2 anos**. Código
   Efficiency-and-Security Kernel for LLM Applications, with a Ground-Truth
   Refutation of Multi-Agent Mitosis* — em submissão; snapshot citável via DOI abaixo.
 - Snapshot citável: DOI [10.5281/zenodo.21401899](https://doi.org/10.5281/zenodo.21401899) · `CITATION.cff` no repo.
-- Benchmark consolidado: `benchmarks/ab-claude-code/results/RESULTS.md`.
+- Benchmark consolidado: `benchmarks/ab-publico/results/RESULTS.md`.
 - A autópsia da mitose (o resultado negativo que originou o projeto):
   `FINDINGS.md`.

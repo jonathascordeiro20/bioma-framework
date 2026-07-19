@@ -77,7 +77,7 @@ First public release on PyPI, via Trusted Publishing (OIDC).
 - `bioma.vision` — pixel secret redaction (OCR + region masking) and image
   distillation; `bioma.esg` / `bioma.esg_report` — energy & CO2e accounting.
 - Benchmarks shipped with raw data: A/B vs real Claude Code across 8 models,
-  consolidated in `benchmarks/ab-claude-code/results/RESULTS.md`.
+  consolidated in `benchmarks/ab-publico/results/RESULTS.md`.
 
 ### Operational notes
 

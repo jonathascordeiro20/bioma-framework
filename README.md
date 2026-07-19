@@ -68,7 +68,7 @@ journalist, a regulator) can verify without taking your word for it.
 ## By the numbers — all measured, all reproducible
 
 From a paired A/B benchmark: **8 models × 30 coding tasks × 3 reps = 1,440 real API calls.**
-Raw data, code, and charts live in [`benchmarks/ab-claude-code`](benchmarks/ab-claude-code/results/RESULTS.md).
+Raw data, code, and charts live in [`benchmarks/ab-publico`](benchmarks/ab-publico/results/RESULTS.md).
 
 | | |
 |---|---|
@@ -85,21 +85,21 @@ Raw data, code, and charts live in [`benchmarks/ab-claude-code`](benchmarks/ab-c
 
 **One shield, every model.** Median input tokens per task, baseline vs. BIOMA:
 
-![Input tokens per task, baseline vs BIOMA](benchmarks/ab-claude-code/results/charts/hero_cross_model.png)
+![Input tokens per task, baseline vs BIOMA](benchmarks/ab-publico/results/charts/hero_cross_model.png)
 
 **"But native caching is free — why bother?"** We ran that as its own experiment. BIOMA is cheaper
 *on top of* caching, and on the flagship model it wins at **every** session length:
 
-![Savings on top of caching](benchmarks/ab-claude-code/results/charts/savings_on_top_of_caching.png)
+![Savings on top of caching](benchmarks/ab-publico/results/charts/savings_on_top_of_caching.png)
 
 **Real sessions grow.** Caching discounts the price of the history, but the model still *carries* it.
 Apoptosis keeps it bounded — the BIOMA curve literally bends back down while the baseline climbs:
 
-![Growing conversation](benchmarks/ab-claude-code/results/charts/growing_conversation_cost.png)
+![Growing conversation](benchmarks/ab-publico/results/charts/growing_conversation_cost.png)
 
 *(We also publish the chart that stops an inflated headline — savings depend on how stale your context is —
 so you can locate your own workload instead of trusting one number:
-[`reduction_by_stale_ratio.png`](benchmarks/ab-claude-code/results/charts/reduction_by_stale_ratio.png).)*
+[`reduction_by_stale_ratio.png`](benchmarks/ab-publico/results/charts/reduction_by_stale_ratio.png).)*
 
 ---
 
@@ -199,7 +199,7 @@ for Linux/macOS/Windows — no Rust toolchain needed to install.
 
 ## Proof & reproducibility
 
-- **[`benchmarks/ab-claude-code/results/RESULTS.md`](benchmarks/ab-claude-code/results/RESULTS.md)** — the full writeup: methodology, the 1,440-call dataset, the caching experiments, every chart, and honest limitations.
+- **[`benchmarks/ab-publico/results/RESULTS.md`](benchmarks/ab-publico/results/RESULTS.md)** — the full writeup: methodology, the 1,440-call dataset, the caching experiments, every chart, and honest limitations.
 - **[`FINDINGS.md`](FINDINGS.md)** — ground-truth evaluation, including what we tested and **refuted** (multi-LLM "mitosis" does not improve quality — so it is not in the product).
 - **Citable snapshot:** [Zenodo DOI 10.5281/zenodo.21401899](https://doi.org/10.5281/zenodo.21401899).
 - Every number above traces to a file in the repo. We welcome reproductions that disagree — divergent results get linked here.

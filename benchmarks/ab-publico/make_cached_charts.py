@@ -104,7 +104,7 @@ def main() -> int:
     fig.text(0.005, 0.005,
              f"Paired 4-arm, Anthropic models, warmup={warmup}, temperature=0.2. "
              f"fable-5 excluded (safety refusals billed $0). "
-             f"Raw data & methodology: github.com/{REPO}/benchmarks/ab-claude-code",
+             f"Raw data & methodology: github.com/{REPO}/benchmarks/ab-publico",
              fontsize=7, color="#6b7280")
     CHARTS.mkdir(parents=True, exist_ok=True)
     out = CHARTS / "savings_on_top_of_caching.png"

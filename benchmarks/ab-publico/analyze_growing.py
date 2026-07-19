@@ -118,7 +118,7 @@ def main() -> int:
              "baseline grows unbounded). bottom: billed cost, caching on both arms.",
              ha="center", fontsize=9.5, color="#6b7280")
     fig.text(0.005, 0.004, f"Anthropic models, cache on both arms, temperature=0.2. "
-             f"Raw data & methodology: github.com/{REPO}/benchmarks/ab-claude-code",
+             f"Raw data & methodology: github.com/{REPO}/benchmarks/ab-publico",
              fontsize=7, color="#6b7280")
     CHARTS.mkdir(parents=True, exist_ok=True)
     out = CHARTS / "growing_conversation_cost.png"

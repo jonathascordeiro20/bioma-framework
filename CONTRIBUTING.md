@@ -10,7 +10,7 @@ are held to the same bar.
 1. **No unmeasured claims.** If your change affects tokens, latency, cost or
    quality, include the harness (or extend an existing one) that measures it.
 2. **Honest limits.** If your feature has a failure mode, document it the way
-   `benchmarks/ab-claude-code/results/RESULTS.md` reports refusals and quality
+   `benchmarks/ab-publico/results/RESULTS.md` reports refusals and quality
    losses — visible, not buried.
 3. **The kernel stays lean.** `bioma_micro` is deliberately two primitives
    (hormonal bus + context apoptosis). New primitives need strong evidence.

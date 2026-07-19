@@ -7,7 +7,7 @@ re-ran the honest sceptic's question — *"native prompt caching already discoun
 my history, so why bother?"* — as its own measured experiment. Every number
 below comes from `results/results.jsonl` and the caching runs; nothing is
 hand-tuned. Raw data, code, and this report live in
-[benchmarks/ab-claude-code](https://github.com/jonathascordeiro20/bioma-framework/tree/main/benchmarks/ab-claude-code).
+[benchmarks/ab-publico](https://github.com/jonathascordeiro20/bioma-framework/tree/main/benchmarks/ab-publico).
 
 Headline findings, all measured:
 
