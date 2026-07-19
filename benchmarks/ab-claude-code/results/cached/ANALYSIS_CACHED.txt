@@ -1,0 +1,25 @@
+caching A/B — 36 (model,task) cells, warmup=4 reused calls, real OpenRouter billed cost
+
+== claude-haiku — 12 tasks ==
+  BIOMA saving on top of caching : median 35%  (min 30%, max 61%)
+  shielded payload cacheable     : 0/12 tasks
+  BIOMA cheaper at EVERY length  : 3/12 tasks
+  of the 9 that cross   : caching-alone overtakes at K* median 15 reuses (range 10-25)
+
+== claude-opus — 12 tasks ==
+  BIOMA saving on top of caching : median 51%  (min 37%, max 62%)
+  shielded payload cacheable     : 9/12 tasks
+  BIOMA cheaper at EVERY length  : 9/12 tasks
+  of the 3 that cross   : caching-alone overtakes at K* median 21 reuses (range 18-23)
+
+== pooled ==
+  cells analyzed                 : 24 (excluded 12 free-refusal cells: baseline billed $0)
+  BIOMA vs baseline+caching      : median 42% cheaper per 4-reuse session
+  shielded payload cacheable     : 9/24 cells (too small for the ~4-6k-token Anthropic minimum)
+  BIOMA cheaper at EVERY length   : 12/24 cells
+  of the 12 that cross  : caching-alone overtakes at K* median 15 reuses (same-context worst case)
+
+  Note: 'same context reused K times' is the WORST case for BIOMA (best for
+  caching). In growing conversations the added tail is never in the cached
+  prefix, so BIOMA's advantage holds longer. Output tokens are equal across
+  arms and are included in the billed cost above.
