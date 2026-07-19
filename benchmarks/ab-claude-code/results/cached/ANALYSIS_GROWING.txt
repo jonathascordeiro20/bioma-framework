@@ -1,0 +1,16 @@
+growing-conversation A/B — median across tasks per step (real billed cost)
+
+== claude-opus — 8 steps, up to 38 history turns ==
+  input tokens sent (last step): baseline 6,265  bioma 1,212  (5.2x fewer, BOUNDED vs growing)
+  cumulative billed cost       : baseline+cache $0.2195  bioma+cache $0.1305  (41% saved)
+
+== claude-haiku — 8 steps, up to 38 history turns ==
+  input tokens sent (last step): baseline 4,859  bioma 881  (5.5x fewer, BOUNDED vs growing)
+  cumulative billed cost       : baseline+cache $0.0337  bioma+cache $0.0210  (38% saved)
+
+caveat: task histories cap at 36-50 turns, so the last 1-2 steps plateau
+(same context reused -> cached read), narrowing the $ gap there. The TOKEN
+divergence is the clean signal: caching discounts price but the model still
+carries the full context (latency, window pressure, decode energy).
+
+wrote C:\Users\jonat\A.N.I.M.A\workspace\benchmarks\ab-claude-code\results\charts\growing_conversation_cost.png
