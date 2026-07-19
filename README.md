@@ -1,243 +1,193 @@
+<div align="center">
+
 # B.I.O.M.A.
+
+### The local layer that cuts LLM cost, energy, and carbon — and lets an auditor **prove it**
 
 **🌐 English · [Português](README.pt-BR.md)**
 
 [![CI](https://github.com/jonathascordeiro20/bioma-framework/actions/workflows/ci.yml/badge.svg)](https://github.com/jonathascordeiro20/bioma-framework/actions/workflows/ci.yml)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21401899.svg)](https://doi.org/10.5281/zenodo.21401899)
 [![PyPI - bioma-framework](https://img.shields.io/pypi/v/bioma-framework.svg?label=bioma-framework)](https://pypi.org/project/bioma-framework/)
 [![PyPI - bioma-micro](https://img.shields.io/pypi/v/bioma-micro.svg?label=bioma-micro)](https://pypi.org/project/bioma-micro/)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21401899.svg)](https://doi.org/10.5281/zenodo.21401899)
 [![License: FSL-1.1-MIT](https://img.shields.io/badge/license-FSL--1.1--MIT-blue.svg)](LICENSE)
 ![Built with Rust + Python](https://img.shields.io/badge/built%20with-Rust%20%2B%20Python-orange.svg)
-![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)
-![Tokens saved: up to 97%](https://img.shields.io/badge/tokens%20saved-up%20to%2097%25-success.svg)
 
-**A local, provider-agnostic efficiency & security micro-kernel for LLM applications.**
+**A drop-in, provider-agnostic micro-kernel that prunes wasted LLM context *before* your prompt leaves the machine.**
+Rust core, microsecond decisions, zero code changes. Point your `base_url` at it — that's the whole integration.
 
-📖 Full technical guide (architecture, enterprise deployment, tuning): [TECHNICAL_GUIDE.pt-BR.md](TECHNICAL_GUIDE.pt-BR.md)
+</div>
 
-<p align="center">
-  <img src="assets/bioma-concept-map.png" width="760"
-       alt="B.I.O.M.A. concept map: what it is, its three mechanisms (context apoptosis, cognitive firewall, hormonal bus), what it honestly generates, and why sovereignty depends on where the model runs.">
-</p>
+---
 
-B.I.O.M.A. is a drop-in artifact — a lock-free Rust kernel (`bioma_micro`) plus a
-thin Python layer — that you embed in *any* project or architecture that talks to an
-LLM. It does not try to make the model "smarter". It makes the *processing* cheaper,
-faster and safer, in-process, before your prompt ever leaves the machine:
+## The 30-second story
 
-- **Context apoptosis** — dehydrates wasted/stale context (−80% input tokens; up to
-  −97% on long sessions).
-- **Cognitive firewall** — secret redaction, cognitive-DDoS/flood detection, and a
-  dispatch timeout guard.
-- **Hormonal bus** — lock-free μs signalling substrate (~2M signals/s).
+Every time an LLM app takes another turn, it **re-sends the entire conversation** — the model keeps no
+state between calls. In real agent sessions that resent history is **50–60% of the token bill**, and it
+grows every turn. Tokens cost money, latency, and **energy** — and, increasingly, a carbon number a
+company is legally required to disclose.
 
-100% local. Provider-agnostic: harden the payload here, then send it to **Anthropic,
-Google, OpenAI** — or anything — with *your* SDK.
+**B.I.O.M.A. deletes the dead weight in-process.** A ~500-line Rust kernel applies *context apoptosis* —
+class-aware, half-life decay that drops stale history and keeps what matters — in about **1 microsecond**,
+with **no model, no rewrite, and no broken prompt caching**. You keep your provider, your SDK, your keys.
 
-> **New here?** [`OVERVIEW.md`](OVERVIEW.md) explains what B.I.O.M.A. is, the pain it
-> attacks, and the real benchmarks as proof. Step-by-step deployment (local & online
-> providers) is in [`IMPLEMENTATION.md`](IMPLEMENTATION.md). Every claim is measured and
-> audited in [`FINDINGS.md`](FINDINGS.md), including what we tested and **refuted** (multi-LLM
-> "mitosis" does not improve quality — it is not part of the product).
+Then it does the thing nobody else does: it turns the measured savings into a **signed, tamper-evident
+carbon ledger** an external auditor can verify without trusting you.
 
-## Use it as a library (any provider)
+> **This is not "make the model smarter."** It makes the *processing* cheaper, faster, safer, and
+> **auditable** — locally, before anything leaves your machine.
+
+---
+
+## By the numbers — all measured, all reproducible
+
+From a paired A/B benchmark: **8 models × 30 coding tasks × 3 reps = 1,440 real API calls.**
+Raw data, code, and charts live in [`benchmarks/ab-claude-code`](benchmarks/ab-claude-code/results/RESULTS.md).
+
+| | |
+|---|---|
+| 🔻 **−84.7%** median input tokens | across all 8 models (Wilcoxon p ≈ 1.7e-16) |
+| ✅ **Quality-neutral** | paired success 81.2% → 81.9% |
+| 💸 **−42% vs. free prompt caching** | measured on top of native caching, not instead of it |
+| 📈 **5.2–5.5× fewer tokens** carried | in growing conversations, where caching can't help |
+| ⚡ **~1 µs** per pruning decision | Rust kernel, no auxiliary model |
+| 🔒 **Signed & verifiable** | carbon/cost ledger a third party can check |
+
+---
+
+## See it
+
+**One shield, every model.** Median input tokens per task, baseline vs. BIOMA:
+
+![Input tokens per task, baseline vs BIOMA](benchmarks/ab-claude-code/results/charts/hero_cross_model.png)
+
+**"But native caching is free — why bother?"** We ran that as its own experiment. BIOMA is cheaper
+*on top of* caching, and on the flagship model it wins at **every** session length:
+
+![Savings on top of caching](benchmarks/ab-claude-code/results/charts/savings_on_top_of_caching.png)
+
+**Real sessions grow.** Caching discounts the price of the history, but the model still *carries* it.
+Apoptosis keeps it bounded — the BIOMA curve literally bends back down while the baseline climbs:
+
+![Growing conversation](benchmarks/ab-claude-code/results/charts/growing_conversation_cost.png)
+
+*(We also publish the chart that stops an inflated headline — savings depend on how stale your context is —
+so you can locate your own workload instead of trusting one number:
+[`reduction_by_stale_ratio.png`](benchmarks/ab-claude-code/results/charts/reduction_by_stale_ratio.png).)*
+
+---
+
+## What makes it different
+
+- **Deletion-only, cache-safe by construction.** The surviving prefix stays byte-identical, so your
+  provider's prompt cache still hits. Neural compressors (LLMLingua & co.) *rewrite* the prompt and
+  break caching; BIOMA composes with it.
+- **Local & provider-agnostic.** 100% in-process. Harden the payload here, then dispatch to
+  **Anthropic, Google, OpenAI** — or anything — with *your* SDK. Nothing to send to a SaaS.
+- **Honest by default.** Every request writes a JSONL audit line (tokens before/after, what was purged,
+  kernel µs). We document where it *loses*: against agents that already manage context it's a correct
+  no-op; on low-stale context it saves less.
+
+---
+
+## Auditable carbon ledger — the part no competitor has
+
+A carbon or cost claim is worth nothing if a third party can't verify it. So the savings ship as a
+**signed, tamper-evident ledger**:
+
+```bash
+pip install "bioma-framework[ledger]"
+bioma-carbon-ledger keygen  --out issuer                      # Ed25519 keypair
+bioma-carbon-ledger build   bioma_gateway_audit.jsonl --grid br --price-in 2.0 \
+                            --key issuer.key --out ledger.json
+bioma-carbon-ledger verify  ledger.json --pub issuer.pub --audit bioma_gateway_audit.jsonl
+```
+
+Tokens are **measured**; the audit is **hash-chained** (alter or drop any row and the chain breaks);
+the ledger is **Ed25519-signed** (verified with the public key alone); energy uses **declared, versioned**
+coefficient bounds (low/mid/high — the reduction % is exact). `verify` catches both attacks: forge the
+number → `signature INVALID`; tamper the audit → `recompute MISMATCH`. Emissions are labeled an
+**avoided-emissions counterfactual** (GHG Protocol) — never netted against Scope 1/2/3, never an offset.
+
+---
+
+## Quickstart
+
+```bash
+pip install bioma-suite            # EVERYTHING in one command, then:
+bioma-doctor                       # verify the install (exit 0 = healthy)
+```
+
+Or install just what you need:
+
+```bash
+pip install bioma-framework              # core: Rust kernel + Python API
+pip install "bioma-framework[gateway]"     # + drop-in OpenAI/Anthropic gateway
+pip install "bioma-framework[monitor]"     # + live terminal cockpit (bioma-monitor)
+pip install "bioma-framework[ledger]"      # + signed carbon ledger
+```
+
+### Drop-in gateway — zero code changes
+
+```python
+from openai import OpenAI
+client = OpenAI(base_url="http://localhost:8790/v1", api_key="...")   # the only change
+
+# Anthropic clients (incl. Claude Code): set ANTHROPIC_BASE_URL=http://localhost:8790
+```
+
+Proven with the official SDKs on real models: **−78% (OpenAI) / −33% (Anthropic)** billed input,
+answer intact, streaming works, tool-call pairs preserved.
+
+### Use it as a library (any provider)
 
 ```python
 from bioma.firewall_client import CognitiveFirewall
 
-fw = CognitiveFirewall(vault={"db_password": DB_PW})   # secrets to protect
-
-# (a) PURE artifact — harden, then call YOUR provider with YOUR SDK:
-h = fw.shield(history, "refactor this function")
-#   h.prompt / h.system  → clean, dehydrated, secret-free payload
-#   h.telemetry          → saturation, red_alert, apoptosis_reduction, kernel_latency_us
-
-import anthropic                                        # or google.genai, or openai
-msg = anthropic.Anthropic().messages.create(
-    model="claude-sonnet-5", max_tokens=1024,
-    system=h.system or "", messages=[{"role": "user", "content": h.prompt}])
-
-# (b) Bring your own async dispatcher (Anthropic/Google/OpenAI), keep the guards:
-shield = await fw.harden(history, "refactor", dispatch_fn=my_async_provider_call)
-#   → timeout guard + response-side secret redaction applied automatically
+fw = CognitiveFirewall(vault={"db_password": DB_PW})     # secrets to protect
+h  = fw.shield(history, "refactor this function")        # clean, dehydrated, secret-free
+#   h.prompt / h.system  → send with YOUR SDK
+#   h.telemetry          → apoptosis_reduction, saturation, kernel_latency_us
 ```
 
-The Rust kernel is usable directly too:
-
-```python
-import bioma_micro as k
-k.dehydrate([("system rules", k.SYSTEM), ("verbose log " * 200, k.TOOL)])  # → -80% tokens
-k.saturation_scan(payload)     # cognitive-DDoS score 0..1 (flood ≈ 1.0)
-```
-
-## Proven results (ground truth)
-
-| Capability | Result | Source |
-|---|---|---|
-| Context apoptosis | **−80% input tokens** (up to −97% long sessions) | `tests/test_enxuto_efficiency.py` |
-| Answer-quality preservation | **10/10 parity, 100% correct answers at −97% tokens** (5 online models, objective probes) | `tests/test_quality_preservation.py` · `reports/BIOMA_QUALITY_PRESERVATION.md` |
-| Measured energy per dispatch | **2,714.7 J → 69.5 J (−97.4%)**, quality parity (local Llama 3.2 1B, battery fuel gauge, idle subtracted) | `tests/test_energy_local.py` · `reports/BIOMA_ENERGY_LOCAL.md` |
-| Vision context apoptosis (agent screenshot loops) | **6/6 parity, 100% correct at −56% real tokens** (−77% at 24 steps; dehydrated payload is O(1) in session length) — 3 vision models, probes rendered into the pixels | `tests/test_vision_quality_preservation.py` · `reports/BIOMA_VISION_QUALITY.md` |
-| Image distillation (keep-latest dedup + OCR + deterministic shape structure) | **100% answers at −74% tokens vs sending every image** — stale images become ~25–86-token text blocks; local VLM captions measured and rejected (label confabulation) | `tests/test_vision_distill.py` · `reports/BIOMA_VISION_DISTILL.md` |
-| Dev-workload cost benchmark (7 agent models, real OpenRouter usage & prices) | **−57% to −86% median cost at quality parity** — 126 real executions, paired replicas, failures reported first-page (Fable 5×T1 arm-B empty 3/3) | `tests/benchmark_dev_openrouter.py` · `resultados/relatorio.md` · `resultados/SIMULACAO_MERCADO.md` |
-| Drop-in gateway (OpenAI **and Anthropic** surfaces, cache-safe, tool-pair aware) | **−78% (OpenAI) / −33% (Anthropic) billed input tokens, answer intact** with only `base_url` changed — proven with both official SDKs on real models; Claude Code speaks the Anthropic surface | `bioma/gateway.py` · `tests/test_gateway.py` · `tests/prove_gateway_dropin.py` · `tests/prove_anthropic_surface.py` |
-| Apoptosis × prompt caching (real Anthropic cache) | **−65% net cost after the cache discount** — the durable prefix hits the *same* cache in both arms; savings come from purging the never-cacheable middle | `tests/measure_cache_interaction.py` · `resultados/MEDICOES_GATEWAY.md` |
-| Real Claude Code E2E (CLI through the gateway) | **solves real bug+feature tasks, pytest green** with only `ANTHROPIC_BASE_URL` changed; apoptosis is a **safe no-op** here (Claude Code self-manages context — nothing to purge), and the value shows on agents that don't (−84% measured) | `tests/e2e_claude_code.py` · `resultados/E2E_CLAUDE_CODE.md` |
-| E2E real tool-calling agent (fixes a real bug to green pytest) | **−84% accumulated input tokens at task parity** on a long-running agent (−0% on a 3-turn task — apoptosis is a correct no-op with no dead weight) | `tests/e2e_agent_gateway.py` · `resultados/MEDICOES_GATEWAY.md` |
-| Hormonal bus | **~2M signals/s @ ~5μs**, bounded under 10× load | archived bench (research repo) |
-| Cognitive-DDoS mitigation | 15k-token flood → dehydrated pre-dispatch | `tests/test_sovereign_defense.py` |
-| Secret redaction | vault values never reach the model | `reports/BIOMA_IMMUNITY_VERDICT.md` |
-| Pixel secret redaction (closes our own declared gap) | **a real vision model transcribes an AWS/OpenAI key from the original screenshot but only `████` from the redacted one** — OCR + region masking, client-side | `tests/test_vision_secret_redaction.py` · `reports/BIOMA_PIXEL_SECRETS.md` |
-
-## Install
+### Watch it live
 
 ```bash
-pip install bioma-suite                # EVERYTHING in one command (then: bioma-doctor)
-pip install bioma-framework            # core: the Rust micro-kernel + Python API
-pip install "bioma-framework[gateway]"   # + the drop-in OpenAI/Anthropic gateway
-pip install "bioma-framework[all]"       # + client, anthropic, vision and monitor tiers
-# kernel only (no Python layer): pip install bioma-micro
+bioma-monitor                      # follows the gateway audit log: reduction, µs, cost, /health
 ```
 
-`bioma-suite` is the one-shot meta-package: a single install pulls the kernel,
-the framework with every tier, and the LangChain integration — and ships
-`bioma-doctor`, a stdlib-only checkup that verifies each component imports and
-runs a real kernel smoke test (exit 0 = core healthy).
+---
 
-The core install ships the compiled Rust kernel (`bioma_micro`) as a binary
-wheel — no Rust toolchain required. Extras (`gateway`, `client`, `anthropic`,
-`vision`) are opt-in so the base stays light. Publishing is one tag away for
-maintainers (`git tag v1.0.0 && git push --tags` → the `Release` workflow builds
-multi-platform wheels and publishes to PyPI). Local dev from source is in
-[Quickstart](#quickstart-local).
+## How it works — three primitives
 
-## Drop-in gateway — apoptosis with zero code changes
+| Mechanism | What it does |
+|---|---|
+| **Context apoptosis** | Class-aware half-life decay dehydrates stale/verbose history before dispatch — the −84% engine. |
+| **Cognitive firewall** | Secret redaction (text *and* pixels via OCR), cognitive-DDoS/flood detection, dispatch timeout guard. |
+| **Hormonal bus** | Lock-free µs signalling substrate (~2M signals/s) — the kernel's nervous system. |
 
-Point any OpenAI-compatible **or Anthropic-compatible** client's `base_url` at
-the gateway and every request gets context apoptosis transparently — no SDK
-swap, no prompt rewrite:
+100% local. Distributed as `bioma-micro` (Rust kernel) + `bioma-framework` (Python layer), abi3 wheels
+for Linux/macOS/Windows — no Rust toolchain needed to install.
 
-```bash
-pip install fastapi "uvicorn[standard]" httpx
-uvicorn bioma.gateway:app --port 8790
-```
+---
 
-```python
-# OpenAI clients:
-from openai import OpenAI
-client = OpenAI(base_url="http://localhost:8790/v1", api_key="...")   # only change
+## Proof & reproducibility
 
-# Anthropic clients (incl. Claude Code — set ANTHROPIC_BASE_URL):
-from anthropic import Anthropic
-client = Anthropic(base_url="http://localhost:8790", api_key="...")   # only change
-```
+- **[`benchmarks/ab-claude-code/results/RESULTS.md`](benchmarks/ab-claude-code/results/RESULTS.md)** — the full writeup: methodology, the 1,440-call dataset, the caching experiments, every chart, and honest limitations.
+- **[`FINDINGS.md`](FINDINGS.md)** — ground-truth evaluation, including what we tested and **refuted** (multi-LLM "mitosis" does not improve quality — so it is not in the product).
+- **Citable snapshot:** [Zenodo DOI 10.5281/zenodo.21401899](https://doi.org/10.5281/zenodo.21401899).
+- Every number above traces to a file in the repo. We welcome reproductions that disagree — divergent results get linked here.
 
-Both surfaces proven with the official SDKs on real models:
-- **OpenAI** (`tests/prove_gateway_dropin.py`): billed input **−78%** on Sonnet 5
-  / GLM-5.2 / Gemini 3.5 Flash, answer intact, streaming works.
-- **Anthropic `/v1/messages`** (`tests/prove_anthropic_surface.py`): billed input
-  **−33%** on Sonnet 5 / Opus 4.8, answer intact, streaming works — the protocol
-  Claude Code speaks, so `ANTHROPIC_BASE_URL` → the gateway just works.
-
-Design guarantees (each unit-tested in `tests/test_gateway.py`, 14 tests): the
-current query is never filtered; the surviving `system`+`FACT` prefix stays
-**byte-identical** across calls (prompt-cache-safe); tool-call/tool-result pairs
-survive or purge as a unit (never orphaned) — on both the OpenAI `tool` role and
-the Anthropic `tool_use`/`tool_result` block structure. Anthropic `system` is a
-top-level field, forwarded untouched (never purged).
-
-## Frugal AI — the official KPI: energy per token
-
-B.I.O.M.A. is a **client-side Frugal AI layer that auditably reduces the energy
-cost of LLM inference per deployment**. The kernel's per-dispatch audit
-(tokens before/after) *is* the KPI: the reduction percentage is exact and
-coefficient-independent. A reproducible benchmark (`tests/test_esg_benchmark.py`
-→ `reports/BIOMA_ESG_BENCHMARK.md`) converts the measured token savings into
-bounded Wh/gCO2e estimates using declared literature coefficients
-(0.5–1.3 kWh/M tokens; grid presets; caching-adjusted counterfactual), with the
-conversion helpers shipped in `bioma/esg.py`. This is a per-deployment claim —
-not a global one; it scales with adoption and with your grid.
-
-Turn your own real traffic into a case report: run your workload through the
-gateway, then `python -m bioma.esg_report bioma_gateway_audit.jsonl --grid eu
---price-in <your $/M>` prints tokens / Wh / gCO2e / $ avoided from the measured
-audit log — the design-partner instrument (`bioma/esg_report.py`). A ready-to-run
-NVIDIA-GPU energy harness (`tests/measure_energy_gpu.py`) awaits datacenter
-hardware; it fabricates no numbers without a GPU.
-
-## Live monitor — the terminal cockpit
-
-Watch everything the deployment measures, in real time, from the terminal:
-
-```bash
-pip install "bioma-framework[monitor]"
-bioma-monitor                            # follows bioma_gateway_audit.jsonl live
-bioma-monitor --grid br --price-in 2.0   # + bounded ESG / $ estimates
-```
-
-`bioma-monitor` tails the same per-request audit JSONL the gateway writes
-(`BIOMA_AUDIT_LOG`) — session totals, a reduction sparkline, kernel μs p50/max,
-a per-model table, a request feed, and the gateway's `/health` status. Every
-number on screen is a number in the log; the energy/cost panel reuses the
-declared-coefficient estimator from `bioma.esg` and is always labeled an
-estimate. `--tail` starts at the end of the log (live traffic only); `--once`
-renders a single frame (CI/screenshot-friendly).
-
-## Auditable carbon ledger — a signed, verifiable savings report
-
-A carbon or cost number is only credible if a third party can verify it. The
-carbon ledger turns the gateway's measured audit log into a **signed,
-tamper-evident** report — the instrument a CFO, a CSRD assessor or an external
-auditor can check without trusting you:
-
-```bash
-pip install "bioma-framework[ledger]"
-bioma-carbon-ledger keygen --out issuer                       # Ed25519 keypair
-bioma-carbon-ledger build bioma_gateway_audit.jsonl \
-    --grid br --price-in 2.0 --key issuer.key --out ledger.json
-bioma-carbon-ledger verify ledger.json --pub issuer.pub --audit bioma_gateway_audit.jsonl
-```
-
-Four properties make it auditable: tokens are **measured** ground truth; the
-audit rows are **hash-chained** (altering or dropping any row breaks the chain);
-the finished ledger is **Ed25519-signed** (verified with the public key alone);
-and energy uses the **declared, versioned** coefficient bounds from `bioma.esg`
-(low/mid/high — the reduction % is exact, only the absolute Wh/CO2e inherit the
-coefficient's uncertainty). `verify` catches both attacks: forging a signed
-number → `signature INVALID`; tampering the audit → `recompute MISMATCH`.
-Emissions are reported as an **avoided-emissions counterfactual**, separately —
-never netted against Scope 1/2/3 and never called an offset (GHG Protocol).
-
-## Quickstart (local)
-
-```bash
-# Build & install the Rust micro-kernel (PyO3 extension)
-python -m pip install maturin
-cd bioma_micro && maturin build --release && \
-  pip install --force-reinstall target/wheels/bioma_micro-*.whl && cd ..
-
-# Run the test suite (offline, deterministic)
-pip install pytest fastapi "openai>=1"
-python -m pytest tests/test_kernel.py tests/test_firewall.py tests/test_server.py -q
-```
-
-Optional: a local FastAPI runner (`bioma.server`, `GET /health` + `POST /v1/dispatch`)
-and a local container image (`deploy/Dockerfile.lean`) are included — no hosted
-service required.
-
-## Layout
-
-```
-bioma_micro/   Rust/PyO3 micro-kernel — hormonal bus + apoptosis + saturation_scan
-bioma/         Python: CognitiveFirewall, LeanOpenRouterClient, local server, monitor
-bioma_suite/   one-shot meta-package (`pip install bioma-suite`) + bioma-doctor
-tests/         unit suite (kernel, firewall, server) + real end-to-end validations
-FINDINGS.md    ground-truth evaluation (proven / refuted), reproducible
-reports/       immunity verdict (APT war-game)
-```
+---
 
 ## License
 
-Fair-source under the **Functional Source License (FSL-1.1-MIT)** ([`LICENSE`](LICENSE)):
-read it, run it, and build on it for any non-competing purpose. The only limit is repackaging
-it as a competing product, and each release automatically becomes MIT two years after its date.
+Fair-source under the **Functional Source License ([FSL-1.1-MIT](LICENSE))**: read it, run it, and build on
+it for any non-competing purpose. Each release automatically becomes **MIT two years** after its date. The
+only limit is repackaging it as a competing product.
+
+<div align="center">
+
+**Harden the payload, not the model.**
+
+</div>
