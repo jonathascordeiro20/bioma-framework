@@ -1,0 +1,15 @@
+# Energy conversion coefficients for the A/B benchmark charts (editable).
+#
+# These mirror the declared literature range in `bioma/esg.py`
+# (KWH_PER_MTOK). Tokens are MEASURED from the run; this kWh-per-token
+# conversion is an ESTIMATE with low/mid/high bounds — never a single
+# unqualified number. Replace `mid` with your own datacenter measurement
+# when you have one; the reduction % on the charts is coefficient-independent.
+#
+# Source: public literature on production frontier-model inference energy,
+# consistent with Epoch AI ~0.3 Wh/GPT-4o query. See bioma/esg.py docstring.
+
+cloud_inference_kwh_per_mtok:
+  low: 0.5
+  mid: 0.9
+  high: 1.3
