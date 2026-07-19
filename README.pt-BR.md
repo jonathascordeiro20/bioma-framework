@@ -107,8 +107,8 @@ contexto — para você localizar o seu próprio workload em vez de confiar num 
 ## O que o diferencia
 
 - **Somente deleção, cache-safe por construção.** O prefixo sobrevivente fica byte-idêntico, então o prompt
-  cache do seu provedor ainda acerta. Compressores neurais (LLMLingua & cia.) *reescrevem* o prompt e quebram
-  o caching; o BIOMA compõe com ele.
+  cache do seu provedor ainda acerta. Compressores neurais de prompt *reescrevem* o prompt e quebram o
+  caching; o BIOMA compõe com ele.
 - **Local e agnóstico de provedor.** 100% in-process. Endureça o payload aqui e despache para **Anthropic,
   Google, OpenAI** — ou qualquer um — com o *seu* SDK. Nada para mandar para um SaaS.
 - **Honesto por padrão.** Cada requisição grava uma linha de audit JSONL (tokens antes/depois, o que foi
@@ -160,7 +160,7 @@ pip install "bioma-framework[ledger]"      # + ledger de carbono assinado
 from openai import OpenAI
 client = OpenAI(base_url="http://localhost:8790/v1", api_key="...")   # a única mudança
 
-# Clientes Anthropic (incl. Claude Code): defina ANTHROPIC_BASE_URL=http://localhost:8790
+# Qualquer cliente compatível com Anthropic: defina ANTHROPIC_BASE_URL=http://localhost:8790
 ```
 
 Comprovado com os SDKs oficiais em modelos reais: **−78% (OpenAI) / −33% (Anthropic)** de input faturado,

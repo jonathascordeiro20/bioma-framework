@@ -106,8 +106,8 @@ so you can locate your own workload instead of trusting one number:
 ## What makes it different
 
 - **Deletion-only, cache-safe by construction.** The surviving prefix stays byte-identical, so your
-  provider's prompt cache still hits. Neural compressors (LLMLingua & co.) *rewrite* the prompt and
-  break caching; BIOMA composes with it.
+  provider's prompt cache still hits. Neural prompt compressors *rewrite* the prompt and break caching;
+  BIOMA composes with it instead.
 - **Local & provider-agnostic.** 100% in-process. Harden the payload here, then dispatch to
   **Anthropic, Google, OpenAI** — or anything — with *your* SDK. Nothing to send to a SaaS.
 - **Honest by default.** Every request writes a JSONL audit line (tokens before/after, what was purged,
@@ -159,7 +159,7 @@ pip install "bioma-framework[ledger]"      # + signed carbon ledger
 from openai import OpenAI
 client = OpenAI(base_url="http://localhost:8790/v1", api_key="...")   # the only change
 
-# Anthropic clients (incl. Claude Code): set ANTHROPIC_BASE_URL=http://localhost:8790
+# Any Anthropic-compatible client: set ANTHROPIC_BASE_URL=http://localhost:8790
 ```
 
 Proven with the official SDKs on real models: **−78% (OpenAI) / −33% (Anthropic)** billed input,
