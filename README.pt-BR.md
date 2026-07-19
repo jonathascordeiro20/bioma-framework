@@ -40,7 +40,7 @@ de adulteração** que um auditor externo verifica sem confiar em você.
 
 ---
 
-## Como funciona — em português simples
+## Como funciona
 
 **Pense nele como um editor da conversa.** Antes de cada mensagem ir para a IA, o B.I.O.M.A. apara as partes
 do histórico do chat que já não importam — do jeito que você cortaria uma thread longa de e-mail até a única
