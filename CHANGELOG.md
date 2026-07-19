@@ -3,7 +3,7 @@
 All notable changes to the B.I.O.M.A. distributions (`bioma-framework` and
 `bioma-micro`) are documented here. Versions follow [SemVer](https://semver.org).
 
-## [Unreleased]
+## [1.2.0] — 2026-07-19
 
 ### bioma-framework — auditable carbon ledger
 
@@ -14,6 +14,8 @@ All notable changes to the B.I.O.M.A. distributions (`bioma-framework` and
   and Ed25519-signs the result. `verify` catches both a forged ledger
   (`signature INVALID`) and a tampered audit (`recompute MISMATCH`). Avoided
   emissions reported as a counterfactual, never netted against Scope 1/2/3.
+
+## [1.1.0] — 2026-07-18
 
 ### bioma-suite 1.0.0 (new distribution)
 
