@@ -214,6 +214,8 @@ def main() -> int:
     ap.add_argument("--tasks", type=int, default=0, help="run only the first N tasks (0 = all)")
     ap.add_argument("--reps", type=int, default=1)
     ap.add_argument("--mock", action="store_true", help="no network: canned responses")
+    ap.add_argument("--via-openrouter", action="store_true",
+                    help="route every model through OpenRouter (needs OPENROUTER_API_KEY)")
     ap.add_argument("--out", default=str(RESULTS))
     args = ap.parse_args()
 
@@ -229,6 +231,13 @@ def main() -> int:
         selected = [m for m in roster.values() if m["tier"] == args.tier]
     else:
         selected = list(roster.values())
+
+    if args.via_openrouter:
+        selected = [
+            {**m, "provider": "openai_compatible", "id": m["openrouter_id"],
+             "base_url": "https://openrouter.ai/api/v1", "key_env": "OPENROUTER_API_KEY"}
+            for m in selected
+        ]
 
     if not args.mock:
         skipped = [m["name"] for m in selected if not usable(m)]

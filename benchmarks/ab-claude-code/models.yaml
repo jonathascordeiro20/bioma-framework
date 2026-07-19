@@ -11,17 +11,23 @@
 # Entries marked "# VERIFY" could not be confirmed on the provider's official
 # docs from this environment (proxy 403) — double-check before a paid run.
 
+# openrouter_id: slug used when running with --via-openrouter (single
+# OPENROUTER_API_KEY for every model; OpenRouter adds its own fee on top of
+# the listed direct-API prices). Slugs confirmed against openrouter.ai pages.
+
 tiers:
   frontier:
     claude-opus:
       provider: anthropic
       id: claude-opus-4-8
+      openrouter_id: anthropic/claude-opus-4.8
       price_in: 5.00
       price_out: 25.00
       key_env: ANTHROPIC_API_KEY
     gpt-5.5:
       provider: openai_compatible
       id: gpt-5.5
+      openrouter_id: openai/gpt-5.5
       base_url: https://api.openai.com/v1
       price_in: 5.00
       price_out: 30.00
@@ -29,6 +35,7 @@ tiers:
     gemini-pro:
       provider: openai_compatible
       id: gemini-3.1-pro-preview   # VERIFY — exact Gemini API id unconfirmed (may be gemini-3.1-pro)
+      openrouter_id: google/gemini-3.1-pro-preview
       base_url: https://generativelanguage.googleapis.com/v1beta/openai/
       price_in: 2.00               # VERIFY — third-party sources only ($4.00 above 200K context)
       price_out: 12.00             # VERIFY — third-party sources only ($18.00 above 200K context)
@@ -38,12 +45,14 @@ tiers:
     claude-haiku:
       provider: anthropic
       id: claude-haiku-4-5
+      openrouter_id: anthropic/claude-haiku-4.5
       price_in: 1.00
       price_out: 5.00
       key_env: ANTHROPIC_API_KEY
     gpt-mini:
       provider: openai_compatible
       id: gpt-5.4-mini             # VERIFY — corroborated by aggregators, official page unreachable
+      openrouter_id: openai/gpt-5.4-mini
       base_url: https://api.openai.com/v1
       price_in: 0.75               # VERIFY
       price_out: 4.50              # VERIFY
@@ -53,6 +62,7 @@ tiers:
       # on 2026-07-24; `deepseek-v4-flash` is the direct id for the same model.
       provider: openai_compatible
       id: deepseek-v4-flash
+      openrouter_id: deepseek/deepseek-v4-flash
       base_url: https://api.deepseek.com
       price_in: 0.14               # cache-miss input; cache-hit input is $0.0028
       price_out: 0.28
