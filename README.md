@@ -116,7 +116,7 @@ so you can locate your own workload instead of trusting one number:
 
 ---
 
-## Auditable carbon ledger — the part no competitor has
+## Auditable carbon ledger
 
 A carbon or cost claim is worth nothing if a third party can't verify it. So the savings ship as a
 **signed, tamper-evident ledger**:

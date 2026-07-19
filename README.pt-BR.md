@@ -117,7 +117,7 @@ contexto — para você localizar o seu próprio workload em vez de confiar num 
 
 ---
 
-## Ledger de carbono auditável — a parte que nenhum concorrente tem
+## Ledger de carbono auditável
 
 Uma alegação de carbono ou custo não vale nada se um terceiro não pode verificar. Então a economia vem como
 um **ledger assinado e à prova de adulteração**:
