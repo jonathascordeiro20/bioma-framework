@@ -6,6 +6,10 @@
 #   openai_compatible  -> `openai` SDK against `base_url` (OpenAI, Gemini, DeepSeek)
 #
 # price_in / price_out are USD per 1M tokens.
+# Verification status (2026-07-19): Anthropic ids/prices confirmed against the
+# official model catalog. OpenAI gpt-5.5 id/prices match developers.openai.com.
+# Entries marked "# VERIFY" could not be confirmed on the provider's official
+# docs from this environment (proxy 403) — double-check before a paid run.
 
 tiers:
   frontier:
@@ -24,10 +28,10 @@ tiers:
       key_env: OPENAI_API_KEY
     gemini-pro:
       provider: openai_compatible
-      id: gemini-3.1-pro
+      id: gemini-3.1-pro-preview   # VERIFY — exact Gemini API id unconfirmed (may be gemini-3.1-pro)
       base_url: https://generativelanguage.googleapis.com/v1beta/openai/
-      price_in: 2.00
-      price_out: 12.00
+      price_in: 2.00               # VERIFY — third-party sources only ($4.00 above 200K context)
+      price_out: 12.00             # VERIFY — third-party sources only ($18.00 above 200K context)
       key_env: GEMINI_API_KEY
 
   budget:
@@ -39,15 +43,17 @@ tiers:
       key_env: ANTHROPIC_API_KEY
     gpt-mini:
       provider: openai_compatible
-      id: gpt-5.4-mini
+      id: gpt-5.4-mini             # VERIFY — corroborated by aggregators, official page unreachable
       base_url: https://api.openai.com/v1
-      price_in: 0.75
-      price_out: 4.50
+      price_in: 0.75               # VERIFY
+      price_out: 4.50              # VERIFY
       key_env: OPENAI_API_KEY
     deepseek-chat:
+      # DeepSeek docs: `deepseek-chat` is a legacy alias scheduled for deprecation
+      # on 2026-07-24; `deepseek-v4-flash` is the direct id for the same model.
       provider: openai_compatible
-      id: deepseek-chat
+      id: deepseek-v4-flash
       base_url: https://api.deepseek.com
-      price_in: 0.14
+      price_in: 0.14               # cache-miss input; cache-hit input is $0.0028
       price_out: 0.28
       key_env: DEEPSEEK_API_KEY
