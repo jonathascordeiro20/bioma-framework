@@ -1,0 +1,53 @@
+# Multi-model roster for the paired A/B benchmark.
+# Keyed by short name (used with --models); grouped in two tiers (used with --tier).
+#
+# provider:
+#   anthropic          -> native `anthropic` SDK (Messages API)
+#   openai_compatible  -> `openai` SDK against `base_url` (OpenAI, Gemini, DeepSeek)
+#
+# price_in / price_out are USD per 1M tokens.
+
+tiers:
+  frontier:
+    claude-opus:
+      provider: anthropic
+      id: claude-opus-4-8
+      price_in: 5.00
+      price_out: 25.00
+      key_env: ANTHROPIC_API_KEY
+    gpt-5.5:
+      provider: openai_compatible
+      id: gpt-5.5
+      base_url: https://api.openai.com/v1
+      price_in: 5.00
+      price_out: 30.00
+      key_env: OPENAI_API_KEY
+    gemini-pro:
+      provider: openai_compatible
+      id: gemini-3.1-pro
+      base_url: https://generativelanguage.googleapis.com/v1beta/openai/
+      price_in: 2.00
+      price_out: 12.00
+      key_env: GEMINI_API_KEY
+
+  budget:
+    claude-haiku:
+      provider: anthropic
+      id: claude-haiku-4-5
+      price_in: 1.00
+      price_out: 5.00
+      key_env: ANTHROPIC_API_KEY
+    gpt-mini:
+      provider: openai_compatible
+      id: gpt-5.4-mini
+      base_url: https://api.openai.com/v1
+      price_in: 0.75
+      price_out: 4.50
+      key_env: OPENAI_API_KEY
+    deepseek-chat:
+      provider: openai_compatible
+      id: deepseek-chat
+      base_url: https://api.deepseek.com
+      price_in: 0.14
+      price_out: 0.28
+      key_env: DEEPSEEK_API_KEY

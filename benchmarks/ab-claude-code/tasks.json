@@ -1,0 +1,47 @@
+[
+  {
+    "id": "py-lru-cache",
+    "repo": "orders-api",
+    "lang": "python",
+    "system": "You are a coding assistant working inside the orders-api repository (Python 3.11, Flask). Answer with working code.",
+    "session_turns": [
+      {"role": "user", "content": "Here is our config.py for reference:\n\n```python\nimport os\n\nclass Config:\n    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'sqlite:///dev.db')\n    REDIS_URL = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')\n    SECRET_KEY = os.environ.get('SECRET_KEY', 'dev')\n    JSON_SORT_KEYS = False\n    MAX_CONTENT_LENGTH = 16 * 1024 * 1024\n```"},
+      {"role": "assistant", "content": "Thanks — noted. The config uses environment variables with local fallbacks for the database, Redis and secret key."},
+      {"role": "user", "content": "Why is our /health endpoint sometimes slow?"},
+      {"role": "assistant", "content": "Your /health endpoint pings both the database and Redis synchronously. If either has connection pool exhaustion, the request blocks. Consider a shallow health check that only reports process liveness, plus a separate /ready probe for dependencies."},
+      {"role": "user", "content": "OK we fixed that already, moving on. We keep recomputing expensive product lookups."}
+    ],
+    "final_prompt": "Implement an LRUCache class in pure Python: constructor takes capacity, get(key) returns the value or None, put(key, value) inserts and evicts the least-recently-used entry when over capacity. Reply with a single ```python code block.",
+    "success_keywords": ["LRUCache", "capacity"]
+  },
+  {
+    "id": "ts-debounce",
+    "repo": "dashboard-web",
+    "lang": "typescript",
+    "system": "You are a coding assistant working inside the dashboard-web repository (TypeScript, React 18, Vite). Answer with working code.",
+    "session_turns": [
+      {"role": "user", "content": "Our package.json deps:\n\n```json\n{\n  \"dependencies\": {\n    \"react\": \"^18.3.0\",\n    \"react-dom\": \"^18.3.0\",\n    \"zustand\": \"^4.5.0\",\n    \"axios\": \"^1.7.0\"\n  },\n  \"devDependencies\": {\n    \"typescript\": \"^5.5.0\",\n    \"vite\": \"^5.3.0\",\n    \"eslint\": \"^9.0.0\"\n  }\n}\n```"},
+      {"role": "assistant", "content": "Got it — React 18 + Vite + zustand for state, axios for HTTP."},
+      {"role": "user", "content": "Should we migrate from eslint 8 config format?"},
+      {"role": "assistant", "content": "You're already on eslint 9, so the flat config (eslint.config.js) is the default. If you still have .eslintrc.json you can keep it via ESLINT_USE_FLAT_CONFIG=false, but migrating to flat config is recommended."},
+      {"role": "user", "content": "Fine, that's done. Now the search box fires an API request per keystroke."}
+    ],
+    "final_prompt": "Write a typed debounce utility in TypeScript: function debounce<T extends (...args: any[]) => void>(fn: T, waitMs: number) returning a debounced function with a .cancel() method. Use setTimeout/clearTimeout. Reply with a single ```ts code block.",
+    "success_keywords": ["debounce", "clearTimeout"]
+  },
+  {
+    "id": "sql-top-n-per-group",
+    "repo": "analytics-db",
+    "lang": "sql",
+    "system": "You are a data engineer working with PostgreSQL 16. Answer with working SQL.",
+    "session_turns": [
+      {"role": "user", "content": "Relevant schema:\n\n```sql\nCREATE TABLE orders (\n    id bigserial PRIMARY KEY,\n    customer_id bigint NOT NULL,\n    region text NOT NULL,\n    total_cents integer NOT NULL,\n    created_at timestamptz NOT NULL DEFAULT now()\n);\nCREATE INDEX idx_orders_region ON orders (region);\n```"},
+      {"role": "assistant", "content": "Schema noted: orders with customer, region, total in cents and creation timestamp, indexed by region."},
+      {"role": "user", "content": "Is bigserial still OK or should we use identity columns?"},
+      {"role": "assistant", "content": "For new tables, GENERATED ALWAYS AS IDENTITY is the SQL-standard preference; bigserial still works fine and there is no urgency to migrate existing tables."},
+      {"role": "user", "content": "OK, leaving ids as-is. Marketing wants a regional leaderboard."}
+    ],
+    "final_prompt": "Write one PostgreSQL query returning the top 3 customers by total spend within each region (columns: region, customer_id, total_spend_cents, rank). Use a window function.",
+    "success_keywords": ["ROW_NUMBER", "PARTITION BY"]
+  }
+]
