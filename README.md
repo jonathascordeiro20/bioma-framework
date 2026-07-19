@@ -39,7 +39,7 @@ carbon ledger** an external auditor can verify without trusting you.
 
 ---
 
-## How it works — in plain English
+## How it works
 
 **Think of it as an editor for the conversation.** Before each message goes to the AI, B.I.O.M.A. trims the
 parts of the chat history that no longer matter — the way you'd cut a long email thread down to the one
