@@ -328,7 +328,7 @@ produto concorrente; **cada versão converte para MIT após 2 anos**. Código
 
 - Paper (8 pp., em submissão ao arXiv): *B.I.O.M.A.: A Local
   Efficiency-and-Security Kernel for LLM Applications, with a Ground-Truth
-  Refutation of Multi-Agent Mitosis* — fonte em `bioma-enterprise/paper/`.
+  Refutation of Multi-Agent Mitosis* — em submissão; snapshot citável via DOI abaixo.
 - Snapshot citável: DOI [10.5281/zenodo.21401899](https://doi.org/10.5281/zenodo.21401899) · `CITATION.cff` no repo.
 - Benchmark consolidado: `benchmarks/ab-claude-code/results/RESULTS.md`.
 - A autópsia da mitose (o resultado negativo que originou o projeto):
