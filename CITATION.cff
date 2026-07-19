@@ -24,6 +24,5 @@ abstract: >-
   low-value LLM context before dispatch (class-aware half-life decay, ~1 µs
   decision latency), detects cognitive-DDoS floods, and redacts pixel-level
   secrets — with a deterministic per-request audit trail. Benchmarks with raw
-  data cover an end-to-end A/B against a real coding agent and a head-to-head
-  against LLMLingua-2 at matched compression budgets.
+  data cover an end-to-end A/B against a real coding agent.
 doi: 10.5281/zenodo.21401899

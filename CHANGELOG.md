@@ -76,10 +76,8 @@ First public release on PyPI, via Trusted Publishing (OIDC).
   kernel-side apoptosis on every dispatch.
 - `bioma.vision` — pixel secret redaction (OCR + region masking) and image
   distillation; `bioma.esg` / `bioma.esg_report` — energy & CO2e accounting.
-- Benchmarks shipped with raw data: A/B vs real Claude Code
-  (`resultados/E2E_CLAUDE_CODE.md`), head-to-head vs LLMLingua-2
-  (`reports/BIOMA_VS_LLMLINGUA.md`), consolidated honest comparative
-  (`reports/BIOMA_BENCHMARK_COMPARATIVO.md`).
+- Benchmarks shipped with raw data: A/B vs real Claude Code across 8 models,
+  consolidated in `benchmarks/ab-claude-code/results/RESULTS.md`.
 
 ### Operational notes
 

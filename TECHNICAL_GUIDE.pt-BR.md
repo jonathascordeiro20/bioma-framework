@@ -34,7 +34,7 @@ microssegundos:
   taggeada `FACT` (contrato de uso, não bug).
 
 **Tese em uma frase:** *poda estrutural em µs onde há estrutura; compressão
-neural (LLMLingua etc.) onde não há.* O BIOMA explora os metadados que o cliente
+neural onde não há.* O BIOMA explora os metadados que o cliente
 já tem (classes de mensagem + recência) — por isso decide em ~1 µs o que um
 compressor neural leva segundos para decidir pior (ver §4).
 
@@ -185,16 +185,15 @@ Sem toolchain Rust necessário (wheels binários). Fontes:
 | Cenário | Resultado | Fonte no repo |
 | :--- | :--- | :--- |
 | Sessão longa genérica (16 rodadas, reenvia tudo) | **−95,8%** input, paridade de resposta | `test_enxuto_efficiency.py` |
-| Agente tool-calling ingênuo (histórico acumulado) | **−84%** | `resultados/e2e_agent.json` |
-| Claude Code real, sessão longa, threshold 0.2 | **−22%** histórico, tarefa resolvida nos 2 braços, custo estimado −19% | `resultados/E2E_CLAUDE_CODE.md` |
+| Agente tool-calling ingênuo (histórico acumulado) | **−84%** | `benchmarks/ab-claude-code/results/RESULTS.md` |
+| Claude Code real, sessão longa, threshold 0.2 | **−22%** histórico, tarefa resolvida nos 2 braços, custo estimado −19% | `benchmarks/ab-claude-code/results/RESULTS.md` |
 | Claude Code, sessão curta | **~0% (no-op seguro)** | idem |
 | Billing real do provider, payload idêntico | **4.604 → 32** input tokens | idem |
-| vs LLMLingua-2, mesmo budget (~50×), 3 rodadas | BIOMA **100%** de acurácia vs **0%**; 0,04 ms vs ~26 s | `reports/BIOMA_VS_LLMLINGUA.md` |
-| Interação com prompt caching | compõem-se: −76% de custo com cache ativo | `resultados/cache_interaction.json` |
+| Interação com prompt caching | compõem-se: −76% de custo com cache ativo | `benchmarks/ab-claude-code/results/cached/ANALYSIS_CACHED.txt` |
 | Qualidade sob apoptose (6 modelos reais, probes objetivas) | paridade 100% em S1/S2; S3 purga by design | `reports/BIOMA_QUALITY_PRESERVATION.md` |
 
 Relatório consolidado com todas as ressalvas:
-`reports/BIOMA_BENCHMARK_COMPARATIVO.md`.
+`benchmarks/ab-claude-code/results/RESULTS.md`.
 
 ---
 
@@ -331,9 +330,6 @@ produto concorrente; **cada versão converte para MIT após 2 anos**. Código
   Efficiency-and-Security Kernel for LLM Applications, with a Ground-Truth
   Refutation of Multi-Agent Mitosis* — fonte em `bioma-enterprise/paper/`.
 - Snapshot citável: DOI [10.5281/zenodo.21401899](https://doi.org/10.5281/zenodo.21401899) · `CITATION.cff` no repo.
-- Benchmark consolidado: `reports/BIOMA_BENCHMARK_COMPARATIVO.md`.
-- Comparação com o estado da arte: LLMLingua/LLMLingua-2 (Jiang et al., EMNLP
-  2023; Pan et al., 2024) — head-to-head a budget pareado em
-  `reports/BIOMA_VS_LLMLINGUA.md`.
+- Benchmark consolidado: `benchmarks/ab-claude-code/results/RESULTS.md`.
 - A autópsia da mitose (o resultado negativo que originou o projeto):
   `FINDINGS.md`.

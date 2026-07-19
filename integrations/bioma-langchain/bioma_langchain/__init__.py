@@ -35,8 +35,7 @@ __all__ = ["BiomaDehydrator", "dehydrate_messages", "signal_for"]
 __version__ = "0.1.0"
 
 # Tool-calling agents: 0.2 keeps the freshest tool result alive (0.35, the raw
-# kernel default, purges it — measured to cause agent rework; see the repo's
-# BIOMA_BENCHMARK_COMPARATIVO.md).
+# kernel default, purges it — measured to cause agent rework).
 DEFAULT_HALF_LIFE = 6.0
 DEFAULT_SAFE_THRESHOLD = 0.2
 

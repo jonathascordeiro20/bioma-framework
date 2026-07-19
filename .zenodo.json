@@ -1,7 +1,7 @@
 {
   "title": "B.I.O.M.A.: a local efficiency-and-security micro-kernel for LLM applications",
   "upload_type": "software",
-  "description": "B.I.O.M.A. is a drop-in micro-kernel (Rust + Python) that dehydrates stale, low-value LLM context before dispatch (class-aware half-life decay, ~1 µs decision latency), detects cognitive-DDoS floods, and redacts pixel-level secrets — with a deterministic per-request audit trail. Benchmarks with raw data cover an end-to-end A/B against a real coding agent and a head-to-head against LLMLingua-2 at matched compression budgets. Distributed on PyPI as bioma-micro (kernel) and bioma-framework (Python layer). Licensed under the Functional Source License 1.1 with MIT future grant (FSL-1.1-MIT).",
+  "description": "B.I.O.M.A. is a drop-in micro-kernel (Rust + Python) that dehydrates stale, low-value LLM context before dispatch (class-aware half-life decay, ~1 µs decision latency), detects cognitive-DDoS floods, and redacts pixel-level secrets — with a deterministic per-request audit trail. Benchmarks with raw data cover an end-to-end A/B against a real coding agent. Distributed on PyPI as bioma-micro (kernel) and bioma-framework (Python layer). Licensed under the Functional Source License 1.1 with MIT future grant (FSL-1.1-MIT).",
   "creators": [
     {
       "name": "Cordeiro, Jonathas Silva"
