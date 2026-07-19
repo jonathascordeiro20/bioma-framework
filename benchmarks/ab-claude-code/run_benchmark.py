@@ -95,13 +95,33 @@ def call_openai_compatible(model: dict, system: str | None, messages: list[dict]
     resp = client.chat.completions.create(
         model=model["id"], messages=msgs, max_tokens=MAX_TOKENS, temperature=0.2
     )
-    text = resp.choices[0].message.content or ""
+    choice = resp.choices[0]
+    text = choice.message.content or ""
     usage = resp.usage
-    return {
+    out = {
         "text": text,
         "input_tokens": usage.prompt_tokens if usage else approx_tokens(str(msgs)),
         "output_tokens": usage.completion_tokens if usage else approx_tokens(text),
     }
+    # OpenRouter reports the real USD cost of the call as a non-standard
+    # `usage.cost` field. Capture it verbatim when present so the report can use
+    # measured cost instead of price×token math.
+    if usage is not None:
+        cost = getattr(usage, "cost", None)
+        if cost is None:
+            cost = (getattr(usage, "model_extra", None) or {}).get("cost")
+        if cost is not None:
+            out["cost_usd"] = cost
+    # Capture safety refusals verbatim (e.g. Anthropic content_filter): the SDK
+    # exposes the reason on message.refusal / finish_reason but drops it from
+    # `content`. Recording it keeps a blocked call auditable instead of an
+    # unexplained empty answer. Does not affect tokens, gate, or success.
+    finish = getattr(choice, "finish_reason", None)
+    refusal = getattr(choice.message, "refusal", None)
+    if refusal or finish == "content_filter":
+        out["refusal"] = refusal or "(finish_reason=content_filter, no refusal text)"
+        out["finish_reason"] = finish
+    return out
 
 
 def call_mock(model: dict, system: str | None, messages: list[dict]) -> dict:
@@ -149,8 +169,12 @@ def evaluate_success(task: dict, text: str) -> dict:
         return _keyword_gate(task, text, "keywords_fallback")
 
     with tempfile.TemporaryDirectory(prefix="ab-gate-") as tmp:
-        pathlib.Path(tmp, "solution.py").write_text(match.group(1))
-        pathlib.Path(tmp, "test_solution.py").write_text(test_code)
+        # encoding="utf-8" is required: model solutions routinely contain
+        # non-Latin-1 characters (→, ×, emoji in comments); without it, write_text
+        # uses the platform default (cp1252 on Windows) and raises
+        # UnicodeEncodeError, turning a valid answer into a spurious gate failure.
+        pathlib.Path(tmp, "solution.py").write_text(match.group(1), encoding="utf-8")
+        pathlib.Path(tmp, "test_solution.py").write_text(test_code, encoding="utf-8")
         try:
             proc = subprocess.run(
                 [sys.executable, "-m", "pytest", "-x", "-q", "--no-header", "-p", "no:cacheprovider"],
@@ -195,10 +219,14 @@ def run_arm(arm: str, task: dict, model: dict, fw: CognitiveFirewall, mock: bool
         "mock": mock,
         "input_tokens": out["input_tokens"],
         "output_tokens": out["output_tokens"],
+        "cost_usd": out.get("cost_usd"),
         "latency_s": round(latency, 3),
         "response_preview": out["text"][:200],
     }
     row.update(evaluate_success(task, out["text"]))
+    if out.get("refusal"):
+        row["refusal"] = out["refusal"]
+        row["finish_reason"] = out.get("finish_reason")
     if telemetry:
         row["bioma_telemetry"] = telemetry
     return row
@@ -282,6 +310,8 @@ def main() -> int:
                             print(f"  {model['name']:>13} {task['id']:>22} rep{rep} "
                                   f"{arm:>8}: in={tok} ok={row.get('success')}")
                         out.write(json.dumps(row) + "\n")
+                        out.flush()
+                        os.fsync(out.fileno())  # durable per line: a SIGKILL mid-run cannot lose paid calls
                         n_runs += 1
 
     print(f"\n{n_runs} arm-runs appended to {out_path}")
