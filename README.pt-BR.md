@@ -1,175 +1,220 @@
+<div align="center">
+
 # B.I.O.M.A.
 
-**🌐 [English](README.md) · Português**
+### A camada local que corta custo, energia e carbono de LLM — e deixa um auditor **provar isso**
+
+**[🌐 English](README.md) · Português**
 
 [![CI](https://github.com/jonathascordeiro20/bioma-framework/actions/workflows/ci.yml/badge.svg)](https://github.com/jonathascordeiro20/bioma-framework/actions/workflows/ci.yml)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21401899.svg)](https://doi.org/10.5281/zenodo.21401899)
 [![PyPI - bioma-framework](https://img.shields.io/pypi/v/bioma-framework.svg?label=bioma-framework)](https://pypi.org/project/bioma-framework/)
 [![PyPI - bioma-micro](https://img.shields.io/pypi/v/bioma-micro.svg?label=bioma-micro)](https://pypi.org/project/bioma-micro/)
-[![Licença: FSL-1.1-MIT](https://img.shields.io/badge/licen%C3%A7a-FSL--1.1--MIT-blue.svg)](LICENSE)
-![Feito com Rust + Python](https://img.shields.io/badge/feito%20com-Rust%20%2B%20Python-orange.svg)
-![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)
-![Tokens economizados: até 97%](https://img.shields.io/badge/tokens%20economizados-at%C3%A9%2097%25-success.svg)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21401899.svg)](https://doi.org/10.5281/zenodo.21401899)
+[![License: FSL-1.1-MIT](https://img.shields.io/badge/license-FSL--1.1--MIT-blue.svg)](LICENSE)
+![Built with Rust + Python](https://img.shields.io/badge/built%20with-Rust%20%2B%20Python-orange.svg)
 
-**Um micro-kernel local, provider-agnóstico, de eficiência e segurança para aplicações de LLM.**
+**Um micro-kernel drop-in e agnóstico de provedor que poda o contexto desperdiçado do LLM *antes* do prompt sair da máquina.**
+Núcleo em Rust, decisões em microssegundos, zero mudança de código. Aponte seu `base_url` para ele — essa é a integração inteira.
 
-📖 Guia técnico completo (arquitetura, deployment empresarial, tuning): [TECHNICAL_GUIDE.pt-BR.md](TECHNICAL_GUIDE.pt-BR.md)
+</div>
+
+---
+
+## A história em 30 segundos
+
+Toda vez que um app de LLM dá mais um turno, ele **reenvia a conversa inteira** — o modelo não guarda
+estado entre chamadas. Em sessões reais de agente, esse histórico reenviado é **50–60% da conta de tokens**,
+e cresce a cada turno. Tokens custam dinheiro, latência e **energia** — e, cada vez mais, um número de
+carbono que a empresa é obrigada por lei a divulgar.
+
+**O B.I.O.M.A. deleta o peso morto in-process.** Um kernel Rust de ~500 linhas aplica *apoptose de contexto*
+— decaimento por meia-vida, ciente de classe, que descarta o histórico obsoleto e mantém o que importa — em
+cerca de **1 microssegundo**, **sem modelo, sem reescrever, e sem quebrar o prompt caching**. Você mantém seu
+provedor, seu SDK, suas chaves.
+
+E então faz o que ninguém mais faz: transforma a economia medida num **ledger de carbono assinado e à prova
+de adulteração** que um auditor externo verifica sem confiar em você.
+
+> **Isto não é "deixar o modelo mais inteligente".** É deixar o *processamento* mais barato, rápido, seguro e
+> **auditável** — localmente, antes de qualquer coisa sair da sua máquina.
+
+---
+
+## Como funciona — em português simples
+
+**Pense nele como um editor da conversa.** Antes de cada mensagem ir para a IA, o B.I.O.M.A. apara as partes
+do histórico do chat que já não importam — do jeito que você cortaria uma thread longa de e-mail até a única
+resposta relevante antes de encaminhar. Você recebe **a mesma resposta**; só para de pagar para reenviar a
+thread inteira, a cada turno.
 
 <p align="center">
-  <img src="assets/bioma-concept-map.png" width="760"
-       alt="Mapa conceitual do B.I.O.M.A.: o que é, os três mecanismos (apoptose de contexto, firewall cognitivo, barramento hormonal), o que ele realmente gera, e por que a soberania depende de onde o modelo roda.">
+  <img src="assets/how-it-works.pt-BR.png" width="900"
+       alt="Como o B.I.O.M.A. funciona: cada turno da IA reenvia o chat inteiro (a maior parte obsoleta); o B.I.O.M.A. o apara em cerca de um microssegundo dentro do seu app; o modelo recebe um payload pequeno e limpo e devolve a mesma resposta — com ~84% menos tokens e menos custo, energia e carbono.">
 </p>
 
-O B.I.O.M.A. é um artefato plugável — um kernel em Rust lock-free (`bioma_micro`) mais uma
-fina camada Python — que você embute em *qualquer* projeto ou arquitetura que fale com um
-LLM. Ele não tenta deixar o modelo "mais inteligente". Ele torna o *processamento* mais
-barato, rápido e seguro, in-process, antes do seu prompt sair da máquina:
+1. **O problema** — um modelo de IA não lembra nada entre mensagens, então seu app reenvia a conversa
+   *inteira* a cada turno. Em sessões reais, 50–60% disso é enchimento obsoleto que só engorda a conta.
+2. **B.I.O.M.A.** — um componente pequeno e rápido, dentro do seu próprio app, deleta o histórico obsoleto em
+   cerca de um milionésimo de segundo, mantendo as instruções de sistema e o que é de fato relevante. Nenhum
+   modelo de IA participa da poda; seu provedor, suas chaves e seu código ficam exatamente iguais.
+3. **O que é enviado** — um payload pequeno e limpo. O modelo responde exatamente como responderia — você só
+   pagou para enviar um parágrafo em vez da thread inteira.
 
-- **Apoptose de contexto** — desidrata contexto desperdiçado/obsoleto (−80% de tokens de
-  entrada; até −97% em sessões longas).
-- **Firewall cognitivo** — redação de segredos, detecção de DDoS cognitivo/flood, e um
-  timeout guard no despacho.
-- **Barramento hormonal** — substrato de sinalização lock-free em μs (~2M sinais/s).
+E como nada disso importa se você não pode provar, o B.I.O.M.A. anota cada poda e produz um **relatório
+assinado digitalmente** dos tokens, custo e carbono economizados — que um terceiro (um auditor, um
+jornalista, um regulador) verifica sem precisar acreditar na sua palavra.
 
-100% local. Provider-agnóstico: endureça o payload aqui e mande pra **Anthropic, Google,
-OpenAI** — ou qualquer coisa — com o *seu* SDK.
+---
 
-> **Novo por aqui?** [`OVERVIEW.pt-BR.md`](OVERVIEW.pt-BR.md) explica o que é o B.I.O.M.A., a
-> dor que ele ataca, e os benchmarks reais como prova. Implantação passo a passo (modelos locais
-> e online) em [`IMPLEMENTATION.pt-BR.md`](IMPLEMENTATION.pt-BR.md). Toda alegação é medida e
-> auditada em [`FINDINGS.pt-BR.md`](FINDINGS.pt-BR.md), inclusive o que testamos e **refutamos**
-> (a "mitose" multi-LLM não melhora qualidade — não faz parte do produto).
+## Em números — tudo medido, tudo reproduzível
 
-## Use como biblioteca (qualquer provedor)
+De um benchmark A/B pareado: **8 modelos × 30 tarefas de código × 3 reps = 1.440 chamadas reais de API.**
+Dados brutos, código e gráficos em [`benchmarks/ab-claude-code`](benchmarks/ab-claude-code/results/RESULTS.md).
+
+| | |
+|---|---|
+| 🔻 **−84,7%** de tokens de entrada (mediana) | em todos os 8 modelos (Wilcoxon p ≈ 1,7e-16) |
+| ✅ **Qualidade neutra** | sucesso pareado 81,2% → 81,9% |
+| 💸 **−42% vs. prompt caching grátis** | medido *em cima* do caching nativo, não no lugar dele |
+| 📈 **5,2–5,5× menos tokens** carregados | em conversas que crescem, onde o caching não ajuda |
+| ⚡ **~1 µs** por decisão de poda | kernel Rust, sem modelo auxiliar |
+| 🔒 **Assinado e verificável** | ledger de carbono/custo que um terceiro confere |
+
+---
+
+## Veja
+
+**Um shield, todos os modelos.** Tokens de entrada medianos por tarefa, baseline vs. BIOMA:
+
+![Tokens de entrada por tarefa, baseline vs BIOMA](benchmarks/ab-claude-code/results/charts/hero_cross_model.png)
+
+**"Mas o caching nativo é grátis — por que me importar?"** Rodamos isso como experimento próprio. O BIOMA é
+mais barato *em cima* do caching, e no modelo de ponta vence em **todo** comprimento de sessão:
+
+![Economia em cima do caching](benchmarks/ab-claude-code/results/charts/savings_on_top_of_caching.png)
+
+**Sessões reais crescem.** O caching desconta o preço do histórico, mas o modelo ainda o *carrega*. A
+apoptose o mantém limitado — a curva do BIOMA literalmente dobra para baixo enquanto o baseline sobe:
+
+![Conversa que cresce](benchmarks/ab-claude-code/results/charts/growing_conversation_cost.png)
+
+*(Publicamos também o gráfico que impede uma manchete inflada — a economia depende de quão obsoleto é o seu
+contexto — para você localizar o seu próprio workload em vez de confiar num único número:
+[`reduction_by_stale_ratio.png`](benchmarks/ab-claude-code/results/charts/reduction_by_stale_ratio.png).)*
+
+---
+
+## O que o diferencia
+
+- **Somente deleção, cache-safe por construção.** O prefixo sobrevivente fica byte-idêntico, então o prompt
+  cache do seu provedor ainda acerta. Compressores neurais (LLMLingua & cia.) *reescrevem* o prompt e quebram
+  o caching; o BIOMA compõe com ele.
+- **Local e agnóstico de provedor.** 100% in-process. Endureça o payload aqui e despache para **Anthropic,
+  Google, OpenAI** — ou qualquer um — com o *seu* SDK. Nada para mandar para um SaaS.
+- **Honesto por padrão.** Cada requisição grava uma linha de audit JSONL (tokens antes/depois, o que foi
+  purgado, µs do kernel). Documentamos onde ele *perde*: contra agentes que já gerenciam contexto é um no-op
+  correto; em contexto pouco obsoleto economiza menos.
+
+---
+
+## Ledger de carbono auditável — a parte que nenhum concorrente tem
+
+Uma alegação de carbono ou custo não vale nada se um terceiro não pode verificar. Então a economia vem como
+um **ledger assinado e à prova de adulteração**:
+
+```bash
+pip install "bioma-framework[ledger]"
+bioma-carbon-ledger keygen  --out issuer                      # par de chaves Ed25519
+bioma-carbon-ledger build   bioma_gateway_audit.jsonl --grid br --price-in 2.0 \
+                            --key issuer.key --out ledger.json
+bioma-carbon-ledger verify  ledger.json --pub issuer.pub --audit bioma_gateway_audit.jsonl
+```
+
+Tokens são **medidos**; o audit é **hash-chained** (alterar ou remover qualquer linha quebra a cadeia); o
+ledger é **assinado com Ed25519** (verificado só com a chave pública); a energia usa **coeficientes
+declarados e versionados** com limites (baixo/central/alto — a redução % é exata). O `verify` pega os dois
+ataques: forjar o número → `signature INVALID`; adulterar o audit → `recompute MISMATCH`. Emissões rotuladas
+como **contrafactual de emissões evitadas** (GHG Protocol) — nunca abatidas do Scope 1/2/3, nunca offset.
+
+---
+
+## Início rápido
+
+```bash
+pip install bioma-suite            # TUDO num comando só, depois:
+bioma-doctor                       # confira a instalação (exit 0 = saudável)
+```
+
+Ou instale só o que precisa:
+
+```bash
+pip install bioma-framework              # core: kernel Rust + API Python
+pip install "bioma-framework[gateway]"     # + gateway drop-in OpenAI/Anthropic
+pip install "bioma-framework[monitor]"     # + cockpit de terminal ao vivo (bioma-monitor)
+pip install "bioma-framework[ledger]"      # + ledger de carbono assinado
+```
+
+### Gateway drop-in — zero mudança de código
+
+```python
+from openai import OpenAI
+client = OpenAI(base_url="http://localhost:8790/v1", api_key="...")   # a única mudança
+
+# Clientes Anthropic (incl. Claude Code): defina ANTHROPIC_BASE_URL=http://localhost:8790
+```
+
+Comprovado com os SDKs oficiais em modelos reais: **−78% (OpenAI) / −33% (Anthropic)** de input faturado,
+resposta intacta, streaming funciona, pares de tool-call preservados.
+
+### Use como biblioteca (qualquer provedor)
 
 ```python
 from bioma.firewall_client import CognitiveFirewall
 
-fw = CognitiveFirewall(vault={"db_password": DB_PW})   # segredos a proteger
-
-# (a) artefato PURO — endureça e chame SEU provedor com SEU SDK:
-h = fw.shield(history, "refatore esta função")
-#   h.prompt / h.system  → payload limpo, desidratado, sem segredo
-#   h.telemetry          → saturação, red_alert, apoptosis_reduction, kernel_latency_us
-
-import anthropic                                        # ou google.genai, ou openai
-msg = anthropic.Anthropic().messages.create(
-    model="claude-sonnet-5", max_tokens=1024,
-    system=h.system or "", messages=[{"role": "user", "content": h.prompt}])
-
-# (b) traga seu dispatcher async (Anthropic/Google/OpenAI), mantendo os guards:
-shield = await fw.harden(history, "refatore", dispatch_fn=meu_provedor_async)
-#   → timeout guard + redação de segredo na resposta, automáticos
+fw = CognitiveFirewall(vault={"db_password": DB_PW})     # segredos a proteger
+h  = fw.shield(history, "refatore esta função")          # limpo, desidratado, sem segredos
+#   h.prompt / h.system  → envie com o SEU SDK
+#   h.telemetry          → apoptosis_reduction, saturation, kernel_latency_us
 ```
 
-O kernel Rust também é usável direto:
-
-```python
-import bioma_micro as k
-k.dehydrate([("regras de sistema", k.SYSTEM), ("log verboso " * 200, k.TOOL)])  # → -80% tokens
-k.saturation_scan(payload)     # score de DDoS cognitivo 0..1 (flood ≈ 1.0)
-```
-
-## Resultados provados (ground truth)
-
-| Capacidade | Resultado | Fonte |
-|---|---|---|
-| Apoptose de contexto | **−80% tokens de entrada** (até −97% em sessão longa) | `tests/test_enxuto_efficiency.py` |
-| Preservação de qualidade da resposta | **10/10 paridade, 100% de acerto com −97% de tokens** (5 modelos online, probes objetivas) | `tests/test_quality_preservation.py` · `reports/BIOMA_QUALITY_PRESERVATION.md` |
-| Energia medida por dispatch | **2.714,7 J → 69,5 J (−97,4%)**, com paridade de qualidade (Llama 3.2 1B local, fuel gauge de bateria, idle subtraído) | `tests/test_energy_local.py` · `reports/BIOMA_ENERGY_LOCAL.md` |
-| Apoptose de contexto em visão (loops de screenshot de agentes) | **6/6 paridade, 100% de acerto com −56% de tokens reais** (−77% com 24 passos; payload desidratado é O(1) no tamanho da sessão) — 3 modelos de visão, probes rendidas nos pixels | `tests/test_vision_quality_preservation.py` · `reports/BIOMA_VISION_QUALITY.md` |
-| Destilação de imagens (dedup keep-latest + OCR + estrutura determinística de formas) | **100% das respostas com −74% de tokens vs enviar toda imagem** — imagens antigas viram blocos de ~25–86 tokens; caption por VLM local medido e rejeitado (confabula rótulos) | `tests/test_vision_distill.py` · `reports/BIOMA_VISION_DISTILL.md` |
-| Benchmark de custo em dev-workloads (7 modelos de agentes, usage e preços reais do OpenRouter) | **−57% a −86% de custo mediano com paridade de qualidade** — 126 execuções reais, réplicas pareadas, falhas em primeira página (Fable 5×T1 braço B vazio 3/3) | `tests/benchmark_dev_openrouter.py` · `resultados/relatorio.md` · `resultados/SIMULACAO_MERCADO.md` |
-| Gateway drop-in (superfícies OpenAI **e Anthropic**, cache-safe, ciente de pares de tool) | **−78% (OpenAI) / −33% (Anthropic) de tokens de entrada faturados, resposta íntegra** mudando só a `base_url` — provado com os dois SDKs oficiais em modelos reais; o Claude Code fala a superfície Anthropic | `bioma/gateway.py` · `tests/test_gateway.py` · `tests/prove_gateway_dropin.py` · `tests/prove_anthropic_surface.py` |
-| Apoptose × prompt caching (cache real da Anthropic) | **−65% de custo líquido após o desconto de cache** — o prefixo durável acerta o *mesmo* cache nos dois braços; a economia vem de purgar o miolo nunca-cacheável | `tests/measure_cache_interaction.py` · `resultados/MEDICOES_GATEWAY.md` |
-| Claude Code real E2E (CLI pelo gateway) | **resolve tarefas reais de bug+feature, pytest verde** mudando só a `ANTHROPIC_BASE_URL`; aqui a apoptose é um **no-op seguro** (o Claude Code auto-gerencia o contexto — nada a purgar), e o valor aparece em agentes que não fazem isso (−84% medido) | `tests/e2e_claude_code.py` · `resultados/E2E_CLAUDE_CODE.md` |
-| Agente E2E real de tool-calling (corrige um bug real até pytest verde) | **−84% de tokens de entrada acumulados com paridade de tarefa** em agente de sessão longa (−0% numa tarefa de 3 turnos — apoptose é no-op correto sem peso morto) | `tests/e2e_agent_gateway.py` · `resultados/MEDICOES_GATEWAY.md` |
-| Barramento hormonal | **~2M sinais/s @ ~5μs**, limitado sob 10× de carga | bench arquivado (repo de pesquisa) |
-| Mitigação de DDoS cognitivo | flood de 15k tokens → desidratado antes do despacho | `tests/test_sovereign_defense.py` |
-| Redação de segredos | valores do vault nunca chegam ao modelo | `reports/BIOMA_IMMUNITY_VERDICT.md` |
-| Redação de segredos em pixels (fecha a lacuna que declaramos) | **um modelo de visão real transcreve uma chave AWS/OpenAI do screenshot original mas só `████` do redigido** — OCR + máscara de região, client-side | `tests/test_vision_secret_redaction.py` · `reports/BIOMA_PIXEL_SECRETS.md` |
-
-## Frugal AI — o KPI oficial: energia por token
-
-O B.I.O.M.A. é uma **camada Frugal AI client-side que reduz de forma auditável o
-custo energético de inferência de LLM por deployment**. A auditoria por dispatch
-do kernel (tokens antes/depois) *é* o KPI: a redução percentual é exata e
-independente de coeficiente. Um benchmark reproduzível
-(`tests/test_esg_benchmark.py` → `reports/BIOMA_ESG_BENCHMARK.md`) converte a
-economia de tokens medida em estimativas limitadas de Wh/gCO2e com coeficientes
-declarados da literatura (0,5–1,3 kWh/M tokens; presets de grid; contrafactual
-ajustado por caching), com os helpers de conversão em `bioma/esg.py`. É uma
-alegação por deployment — não global; escala com adoção e com o seu grid.
-
-## Instalação
+### Acompanhe ao vivo
 
 ```bash
-pip install bioma-suite                # TUDO num comando só (depois: bioma-doctor)
-pip install bioma-framework            # core: micro-kernel Rust + API Python
-pip install "bioma-framework[gateway]"   # + o gateway drop-in OpenAI/Anthropic
-pip install "bioma-framework[all]"       # + client, anthropic, visão e monitor
-# só o kernel (sem a camada Python): pip install bioma-micro
+bioma-monitor                      # segue o audit do gateway: redução, µs, custo, /health
 ```
 
-O `bioma-suite` é o meta-pacote de instalação única: um comando puxa o kernel,
-o framework com todos os tiers e a integração LangChain — e traz o
-`bioma-doctor`, um checkup só-stdlib que verifica cada componente e roda um
-smoke test real do kernel (exit 0 = core saudável).
+---
 
-O install core já traz o kernel Rust compilado (`bioma_micro`) como wheel binário
-— sem toolchain Rust. Os extras (`gateway`, `client`, `anthropic`, `vision`) são
-opt-in para manter a base leve. Para mantenedores, publicar é um tag
-(`git tag v1.0.0 && git push --tags` → o workflow `Release` constrói os wheels
-multi-plataforma e publica no PyPI).
+## Como funciona — três primitivas
 
-## Início rápido (local)
+| Mecanismo | O que faz |
+|---|---|
+| **Apoptose de contexto** | Decaimento por meia-vida ciente de classe desidrata histórico obsoleto/verboso antes do envio — o motor dos −84%. |
+| **Firewall cognitivo** | Redação de segredos (texto *e* pixels via OCR), detecção de cognitive-DDoS/flood, guarda de timeout de dispatch. |
+| **Barramento hormonal** | Substrato de sinalização lock-free em µs (~2M sinais/s) — o sistema nervoso do kernel. |
 
-```bash
-# Compile e instale o micro-kernel Rust (extensão PyO3)
-python -m pip install maturin
-cd bioma_micro && maturin build --release && \
-  pip install --force-reinstall target/wheels/bioma_micro-*.whl && cd ..
+100% local. Distribuído como `bioma-micro` (kernel Rust) + `bioma-framework` (camada Python), wheels abi3
+para Linux/macOS/Windows — sem toolchain Rust para instalar.
 
-# Rode a suíte de testes (offline, determinística)
-pip install pytest fastapi "openai>=1"
-python -m pytest tests/test_kernel.py tests/test_firewall.py tests/test_server.py -q
-```
+---
 
-Opcional: um runner FastAPI local (`bioma.server`, `GET /health` + `POST /v1/dispatch`) e
-uma imagem de container local (`deploy/Dockerfile.lean`) estão inclusos — sem serviço
-hospedado.
+## Prova e reprodutibilidade
 
-## Monitor ao vivo — o cockpit de terminal
+- **[`benchmarks/ab-claude-code/results/RESULTS.md`](benchmarks/ab-claude-code/results/RESULTS.md)** — o writeup completo: metodologia, o dataset de 1.440 chamadas, os experimentos de caching, cada gráfico e as limitações honestas.
+- **[`FINDINGS.md`](FINDINGS.md)** — avaliação ground-truth, incluindo o que testamos e **refutamos** (a "mitose" multi-LLM não melhora qualidade — por isso não está no produto).
+- **Snapshot citável:** [Zenodo DOI 10.5281/zenodo.21401899](https://doi.org/10.5281/zenodo.21401899).
+- Todo número acima traça até um arquivo do repo. Reproduções que discordem são bem-vindas — resultados divergentes são linkados aqui.
 
-Acompanhe tudo que o deployment mede, em tempo real, no terminal:
-
-```bash
-pip install "bioma-framework[monitor]"
-bioma-monitor                            # segue o bioma_gateway_audit.jsonl ao vivo
-bioma-monitor --grid br --price-in 2.0   # + estimativas ESG / $ com limites
-```
-
-O `bioma-monitor` segue o mesmo audit JSONL por requisição que o gateway grava
-(`BIOMA_AUDIT_LOG`): totais da sessão, sparkline de redução, μs do kernel
-(p50/máx), tabela por modelo, feed de requests e o status `/health` do gateway.
-Todo número na tela é um número do log; o painel de energia/custo reutiliza o
-estimador de coeficientes declarados de `bioma.esg` e é sempre rotulado como
-estimativa. `--tail` começa do fim do log (só tráfego ao vivo); `--once`
-renderiza um frame único (para CI/screenshot).
-
-## Estrutura
-
-```
-bioma_micro/   micro-kernel Rust/PyO3 — barramento hormonal + apoptose + saturation_scan
-bioma/         Python: CognitiveFirewall, LeanOpenRouterClient, servidor local, monitor
-bioma_suite/   meta-pacote de instalação única (`pip install bioma-suite`) + bioma-doctor
-tests/         suíte unitária (kernel, firewall, server) + validações reais end-to-end
-FINDINGS.md    avaliação ground-truth (provado / refutado), reproduzível
-reports/       veredito de imunidade (APT war-game)
-```
+---
 
 ## Licença
 
-Fair-source sob a **Functional Source License (FSL-1.1-MIT)** ([`LICENSE`](LICENSE)):
-leia, execute e construa em cima para qualquer finalidade não-concorrente. O único limite é
-reempacotá-la como produto concorrente, e cada release vira MIT dois anos após sua data.
+Fair-source sob a **Functional Source License ([FSL-1.1-MIT](LICENSE))**: leia, rode e construa em cima para
+qualquer fim não-concorrente. Cada release vira **MIT dois anos** após sua data. O único limite é reempacotar
+como produto concorrente.
+
+<div align="center">
+
+**Endureça o payload, não o modelo.**
+
+</div>
