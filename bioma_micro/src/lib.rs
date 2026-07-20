@@ -8,12 +8,13 @@
 //! apoptosis filter, exposed to Python via PyO3.
 
 mod context_apoptosis;
+mod effort_gauge;
 mod hormonal_bus;
 
 use pyo3::prelude::*;
 use pyo3::wrap_pyfunction;
 
-use context_apoptosis::{dehydrate, saturation_scan, ContextApoptosis};
+use context_apoptosis::{consolidation_gain, dehydrate, saturation_scan, ContextApoptosis};
 use hormonal_bus::{HormonalBus, HormonalSignal};
 
 /// The native module — `import bioma_micro`.
@@ -26,6 +27,9 @@ fn bioma_micro(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<ContextApoptosis>()?;
     m.add_function(wrap_pyfunction!(dehydrate, m)?)?;
     m.add_function(wrap_pyfunction!(saturation_scan, m)?)?;
+    // Cache economics + reasoning-budget gauge
+    m.add_function(wrap_pyfunction!(consolidation_gain, m)?)?;
+    m.add_function(wrap_pyfunction!(effort_gauge::effort_gauge, m)?)?;
 
     // Metabolic signal classes (bitwise flags) for the Python layer.
     m.add("SYSTEM", context_apoptosis::SYSTEM)?;
@@ -33,8 +37,9 @@ fn bioma_micro(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add("ASSISTANT", context_apoptosis::ASSISTANT)?;
     m.add("FACT", context_apoptosis::FACT)?;
     m.add("TOOL", context_apoptosis::TOOL)?;
+    m.add("THINKING", context_apoptosis::THINKING)?;
 
     m.add("__doc__", "B.I.O.M.A. Micro-Kernel — lock-free hormonal bus + context apoptosis.")?;
-    m.add("__version__", "1.0.1")?;
+    m.add("__version__", "1.1.0")?;
     Ok(())
 }

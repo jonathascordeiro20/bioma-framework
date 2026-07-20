@@ -72,11 +72,27 @@ universal "−X%" claim.
 
 | Symbol | Kind | Purpose |
 | :--- | :--- | :--- |
-| `dehydrate(messages, half_life=6.0, safe_threshold=0.35)` | function | one-shot history dehydration; returns kept blocks + audit dict |
+| `dehydrate(messages, half_life=6.0, safe_threshold=0.35, stable_prefix=0)` | function | one-shot history dehydration; `stable_prefix` = cache-aware zone kept verbatim; returns kept blocks + audit dict |
 | `saturation_scan(text, window=8)` | function | duplicate-shingle flood score (0..1) |
-| `ContextApoptosis(half_life, safe_threshold, capacity)` | class | stateful incremental engine (`insert` / `dehydrate` / `render`) |
+| `consolidation_gain(prefix_tokens, purgeable_tokens, calls_ahead=8, ...)` | function | cache economics: is rewriting a cached prefix worth it? net gain + break-even calls |
+| `effort_gauge(text)` | function | O(n) task-complexity score → recommended thinking budget (`tier`, `budget_tokens`, raw `signals`) |
+| `ContextApoptosis(half_life, safe_threshold, capacity, state_capacity=64)` | class | stateful engine (`insert` / `dehydrate(absorb=)` / `render`) + purpose contract (`set_purpose`) + STATE ledger (`note_state`, `state_entries`) |
 | `HormonalBus`, `HormonalSignal` | class | lock-free signal bus |
-| `SYSTEM`, `USER`, `ASSISTANT`, `FACT`, `TOOL` | flags | metabolic signal classes |
+| `SYSTEM`, `USER`, `ASSISTANT`, `FACT`, `TOOL`, `THINKING` | flags | metabolic signal classes |
+
+### Cache-aware dehydration & thinking budgets (1.1.0)
+
+Two cost phases, two levers:
+
+- **Input (prefill):** apoptosis is deletion-only and order-preserving, so a durable
+  prefix stays byte-identical. With provider prompt caching, pass `stable_prefix` to
+  guarantee it, and ask `consolidation_gain()` *when* purging cached ballast actually
+  pays off (cache reads at 0.1× make stale prefixes cheap — break-even is often 15+
+  calls away; the kernel does this arithmetic for you).
+- **Reasoning (decode):** thinking tokens are output-priced (~5×) and sequential.
+  `effort_gauge()` scores each request with cheap lexical signals and returns the
+  budget to forward as `budget_tokens` (Anthropic) / `reasoning_effort` (OpenAI) —
+  trivial turns ("yes", "continue") stop paying for a full thinking budget.
 
 ## License
 

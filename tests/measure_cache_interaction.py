@@ -45,6 +45,10 @@ import httpx  # noqa: E402
 
 PORT = int(os.environ.get("BIOMA_GW_PORT", "8790"))
 GW = f"http://127.0.0.1:{PORT}/v1/chat/completions"
+# braço C opcional: um SEGUNDO gateway com BIOMA_STABLE_PREFIX (zona cache-aware
+# do kernel 1.1.0) — incluído automaticamente se estiver de pé nesta porta.
+PORT_C = int(os.environ.get("BIOMA_GW_PORT_C", "8791"))
+GW_C = f"http://127.0.0.1:{PORT_C}/v1/chat/completions"
 DIRECT = "https://openrouter.ai/api/v1/chat/completions"
 MODEL = "anthropic/claude-sonnet-5"   # preços ($/M): in 2.0, cache_write 2.5, cache_read 0.2, out 10.0
 PRICE = {"in": 2.0, "cw": 2.5, "cr": 0.2, "out": 10.0}
@@ -125,6 +129,11 @@ def main() -> int:
 
     arms = {"A (baseline, contexto completo)": (DIRECT, key),
             "B (BIOMA, contexto desidratado)": (GW, key)}
+    try:
+        httpx.get(f"http://127.0.0.1:{PORT_C}/health", timeout=5).raise_for_status()
+        arms["C (BIOMA, stable_prefix cache-aware)"] = (GW_C, key)
+    except Exception:
+        print(f"  (braço C pulado — nenhum gateway com BIOMA_STABLE_PREFIX na porta {PORT_C})\n")
     rows = {}
     for name, (url, k) in arms.items():
         c1 = call(url, k, msgs)
@@ -149,14 +158,20 @@ def main() -> int:
         print("   (OpenRouter pode não expor cache tokens nesta configuração). A garantia de")
         print("   prefixo byte-idêntico segue provada offline em tests/test_gateway.py.")
     else:
-        a2, b2 = rows["A (baseline, contexto completo)"][1], rows["B (BIOMA, contexto desidratado)"][1]
+        seconds = {name: pair[1] for name, pair in rows.items()}
+        names = list(seconds)
+        cols = " | ".join(n.split(" ")[0] for n in names)
+        print(f"| Métrica (2ª chamada, com cache quente) | {cols} |")
+        print(f"| :--- |{' ---: |' * len(names)}")
+        def row(label, fn):
+            print(f"| {label} | " + " | ".join(fn(seconds[n]) for n in names) + " |")
+        row("tokens de entrada não-cacheados",
+            lambda c: f"{max(0, c['in']-c['cache_read']-c['cache_write']):,}")
+        row("cache_read (com desconto)", lambda c: f"{c['cache_read']:,}")
+        row("custo faturado", lambda c: f"${billed_cost(c):.5f}")
+        a2 = seconds["A (baseline, contexto completo)"]
+        b2 = seconds["B (BIOMA, contexto desidratado)"]
         ca, cb = billed_cost(a2), billed_cost(b2)
-        print(f"| Métrica (2ª chamada, com cache quente) | Baseline A | BIOMA B |")
-        print(f"| :--- | ---: | ---: |")
-        print(f"| tokens de entrada não-cacheados | {max(0,a2['in']-a2['cache_read']-a2['cache_write']):,} "
-              f"| {max(0,b2['in']-b2['cache_read']-b2['cache_write']):,} |")
-        print(f"| cache_read (com desconto) | {a2['cache_read']:,} | {b2['cache_read']:,} |")
-        print(f"| custo faturado | ${ca:.5f} | ${cb:.5f} |")
         if ca > 0:
             print(f"\n**Economia líquida do BIOMA APÓS o desconto de cache: −{(1-cb/ca)*100:.0f}%.**")
             print("O prefixo durável (system+FACT) acerta o cache nos DOIS braços — a economia")

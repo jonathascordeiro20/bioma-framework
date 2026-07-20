@@ -291,3 +291,18 @@ def test_anthropic_tool_result_tail_keeps_its_tool_use():
     assert survivors[-1]["content"][0]["type"] == "tool_result"
     assert survivors[-2]["content"][0]["type"] == "tool_use"
     assert survivors[-2]["content"][0]["id"] == survivors[-1]["content"][0]["tool_use_id"]
+
+
+def test_stable_prefix_keeps_leading_units_verbatim():
+    # cache-aware zone: with stable_prefix=N, the first N history units survive
+    # even when they would otherwise be purged — the cached prefix stays intact.
+    msgs = _long_session()
+    base, _ = dehydrate_messages(msgs, half_life=6.0, safe_threshold=0.35)
+    kept, audit = dehydrate_messages(msgs, half_life=6.0, safe_threshold=0.35,
+                                     stable_prefix=8)
+    # the stable zone is a superset of the baseline survivors at the head
+    assert kept[:8] == msgs[:8]
+    assert len(kept) >= len(base)
+    assert audit.get("stable_prefix_tokens", 0) > 0
+    # order preserved and tail (current query) untouched
+    assert kept[-1] == msgs[-1]

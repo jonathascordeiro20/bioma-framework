@@ -34,7 +34,8 @@ Bridge mode (`BIOMA_FORCE_KEY` set) ignores the client's key and always uses
 Pixel secret redaction (`BIOMA_REDACT_IMAGE_SECRETS` set): OCR every image part
 and mask secrets visible in the pixels before dispatch — opt-in, since OCR is
 off the hot path only when enabled (see `reports/BIOMA_PIXEL_SECRETS.md`).
-Tuning: `BIOMA_HALF_LIFE` (6.0) and `BIOMA_SAFE_THRESHOLD` (0.35).
+Tuning: `BIOMA_HALF_LIFE` (6.0), `BIOMA_SAFE_THRESHOLD` (0.35) and
+`BIOMA_STABLE_PREFIX` (0 — leading history units kept verbatim, cache-aware zone).
 """
 from __future__ import annotations
 
@@ -157,18 +158,28 @@ _EMPTY_AUDIT = {"tokens_before": 0, "tokens_after": 0, "reduction": 0.0,
 
 
 def _apoptose_units(units: list[list[dict]], tail: list[dict], *,
-                    half_life: float, safe_threshold: float) -> tuple[list[dict], dict]:
-    """Run the kernel over pre-grouped history units and reassemble survivors + tail."""
+                    half_life: float, safe_threshold: float,
+                    stable_prefix: int = 0) -> tuple[list[dict], dict]:
+    """Run the kernel over pre-grouped history units and reassemble survivors + tail.
+    `stable_prefix` = number of leading UNITS kept verbatim (cache-aware zone);
+    passed through when the installed kernel supports it (≥1.1.0)."""
     msgs = [(f"[U{idx}]" + _unit_text(unit), _unit_signal(unit))
             for idx, unit in enumerate(units)]
-    audit = kernel.dehydrate(msgs, half_life=half_life, safe_threshold=safe_threshold)
+    try:
+        audit = kernel.dehydrate(msgs, half_life=half_life,
+                                 safe_threshold=safe_threshold,
+                                 stable_prefix=stable_prefix)
+    except TypeError:  # kernel < 1.1.0 — no cache-aware zone
+        audit = kernel.dehydrate(msgs, half_life=half_life,
+                                 safe_threshold=safe_threshold)
     kept_idx = {int(k[2:k.index("]")]) for k in audit["kept"]}
     survivors = [m for idx, unit in enumerate(units) if idx in kept_idx for m in unit]
     return survivors + tail, dict(audit, kept=None)
 
 
 def dehydrate_messages(messages: list[dict], *, half_life: float,
-                       safe_threshold: float) -> tuple[list[dict], dict]:
+                       safe_threshold: float,
+                       stable_prefix: int = 0) -> tuple[list[dict], dict]:
     """Deletion-only, order-preserving apoptosis over an OpenAI message list.
     Returns (surviving messages, audit dict). The LAST user message (and
     everything after it) is the current query — it never enters the filter."""
@@ -178,7 +189,8 @@ def dehydrate_messages(messages: list[dict], *, half_life: float,
         return messages, dict(_EMPTY_AUDIT)
     history, tail = messages[:last_user], messages[last_user:]
     return _apoptose_units(_group_units(history), tail,
-                           half_life=half_life, safe_threshold=safe_threshold)
+                           half_life=half_life, safe_threshold=safe_threshold,
+                           stable_prefix=stable_prefix)
 
 
 # --------------------------------------------------------------------------- #
@@ -243,7 +255,8 @@ def redact_image_secrets(messages: list[dict], redactor) -> int:
 
 
 def dehydrate_anthropic(messages: list[dict], *, half_life: float,
-                        safe_threshold: float) -> tuple[list[dict], dict]:
+                        safe_threshold: float,
+                        stable_prefix: int = 0) -> tuple[list[dict], dict]:
     """Apoptosis over Anthropic Messages. `system` is a separate top-level field
     (always forwarded untouched, never purged) so it is not in `messages`. The
     last user turn is the current query and is never filtered; if it carries a
@@ -260,7 +273,8 @@ def dehydrate_anthropic(messages: list[dict], *, half_life: float,
         split = last_user - 1
     history, tail = messages[:split], messages[split:]
     return _apoptose_units(_group_units_anthropic(history), tail,
-                           half_life=half_life, safe_threshold=safe_threshold)
+                           half_life=half_life, safe_threshold=safe_threshold,
+                           stable_prefix=stable_prefix)
 
 
 # --------------------------------------------------------------------------- #
@@ -278,6 +292,9 @@ def create_app(*, upstream: Optional[str] = None,
         "BIOMA_UPSTREAM", "https://openrouter.ai/api/v1")).rstrip("/")
     app.state.half_life = float(os.environ.get("BIOMA_HALF_LIFE", "6.0"))
     app.state.threshold = float(os.environ.get("BIOMA_SAFE_THRESHOLD", "0.35"))
+    # cache-aware zone: leading history UNITS kept verbatim so a provider
+    # prompt-cache prefix stays byte-identical (kernel ≥ 1.1.0)
+    app.state.stable_prefix = int(os.environ.get("BIOMA_STABLE_PREFIX", "0"))
     app.state.audit_path = os.environ.get("BIOMA_AUDIT_LOG", "bioma_gateway_audit.jsonl")
     app.state.client = httpx.AsyncClient(transport=transport, timeout=600.0)
     # opt-in pixel secret redaction (OCR is slow → off by default). A lazily-built
@@ -375,7 +392,8 @@ def create_app(*, upstream: Optional[str] = None,
         body = await request.json()
         survivors, audit = dehydrate_messages(
             body.get("messages") or [], half_life=app.state.half_life,
-            safe_threshold=app.state.threshold)
+            safe_threshold=app.state.threshold,
+            stable_prefix=app.state.stable_prefix)
         if app.state.redact_images:
             redact_image_secrets(survivors, _image_redactor())
         body["messages"] = survivors
@@ -392,7 +410,8 @@ def create_app(*, upstream: Optional[str] = None,
         body = await request.json()
         survivors, audit = dehydrate_anthropic(
             body.get("messages") or [], half_life=app.state.half_life,
-            safe_threshold=app.state.threshold)
+            safe_threshold=app.state.threshold,
+            stable_prefix=app.state.stable_prefix)
         if app.state.redact_images:
             redact_image_secrets(survivors, _image_redactor())
         body["messages"] = survivors

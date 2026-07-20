@@ -3,6 +3,36 @@
 All notable changes to the B.I.O.M.A. distributions (`bioma-framework` and
 `bioma-micro`) are documented here. Versions follow [SemVer](https://semver.org).
 
+## [1.3.0] — 2026-07-20
+
+### bioma-micro 1.1.0 — "purpose context": both cost phases covered
+
+Backed by the feasibility study in `ESTUDO_PROPOSITO_CONTEXTO.pt-BR.md`
+(input cost grows quadratically with agent-session length; reasoning grows
+linearly; cache reads at 0.1× make prefix consolidation a real decision).
+
+- `dehydrate(..., stable_prefix=N)` — cache-aware zone kept verbatim so a
+  provider prompt-cache prefix stays byte-identical (+ `stable_prefix_tokens`
+  in the audit dict).
+- `consolidation_gain()` — cache economics: net gain + break-even calls for
+  rewriting a cached prefix (defaults = Anthropic read 0.1× / write 1.25×).
+- `effort_gauge()` — O(n) task-complexity gauge → dynamic thinking budget
+  (`tier` off/low/medium/high, `budget_tokens` 0/1k/4k/16k, raw signals
+  exposed). Calibrated on 1223 real agent prompts (68/23/9/0.5% split).
+- `ContextApoptosis`: `set_purpose()` (stable contract header), `note_state()`
+  (bounded deduplicated STATE ledger), `dehydrate(absorb=True)` (purged
+  USER/ASSISTANT turns leave a one-line digest in STATE). New `THINKING`
+  signal class — cheapest weight (0.15), purged before `TOOL`.
+
+### bioma-framework — cache-aware gateway
+
+- `BIOMA_STABLE_PREFIX` (default 0): leading history *units* the gateway keeps
+  verbatim before apoptosis — the kernel 1.1.0 cache-aware zone, end to end.
+  Measured live (Sonnet, real `cache_control`): identical token profile to the
+  plain dehydration arm (no regression) with the byte-identical-prefix
+  guarantee formalized; net BIOMA saving **after** the cache discount: −71%
+  (`resultados/cache_interaction.json`).
+
 ## [1.2.0] — 2026-07-19
 
 ### bioma-framework — auditable carbon ledger
