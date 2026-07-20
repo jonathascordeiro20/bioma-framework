@@ -3,15 +3,19 @@
 **B.I.O.M.A. Micro-Kernel** — a lean efficiency & resilience core for LLM infrastructure,
 written in Rust, exposed to Python via PyO3.
 
-Exactly two proven primitives, nothing else:
+Proven primitives only, nothing else:
 
 - **Context apoptosis** — autonomous history dehydration. Long agent sessions accumulate
   low-value ballast (verbose tool logs, stale turns). The kernel assigns each message a
   metabolic weight by class, applies half-life decay, and purges dead weight *before* the
-  payload hits the API. Microsecond-scale, GIL-released, allocation-light.
+  payload hits the API. Microsecond-scale, GIL-released, allocation-light. Cache-aware
+  since 1.1.0: a `stable_prefix` zone kept byte-identical for provider prompt caching.
+- **Effort gauge** (1.1.0) — O(n) task-complexity score → recommended per-request
+  thinking budget, so trivial turns stop paying for a full reasoning budget.
 - **Hormonal bus** — lock-free in-memory signal injection (~2M signals/s, ~5 µs).
 
-Plus `saturation_scan()`, an O(n) repetition detector for cognitive-DDoS / flood inputs.
+Plus `saturation_scan()` (O(n) repetition detector for cognitive-DDoS / flood inputs)
+and `consolidation_gain()` (the economics of rewriting a provider-cached prefix).
 
 ## Install
 

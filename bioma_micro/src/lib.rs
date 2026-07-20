@@ -1,11 +1,13 @@
 //! B.I.O.M.A. Micro-Kernel — a lean efficiency & resilience core for LLM infra.
 //!
-//! Lean topology: exactly two proven primitives, nothing else.
+//! Lean topology: proven primitives only, nothing else.
 //!   * [`hormonal_bus`]       — lock-free in-memory signal injection (~2M sig/s, ~5μs).
-//!   * [`context_apoptosis`]  — autonomous history dehydration (universal input-token savings).
+//!   * [`context_apoptosis`]  — autonomous history dehydration (universal input-token
+//!                              savings), cache-aware since 1.1.0 (`stable_prefix`).
+//!   * [`effort_gauge`]       — O(n) task-complexity score → dynamic thinking budgets.
 //!
 //! No agents, no mitosis, no orchestration — only the microsecond hot path and the
-//! apoptosis filter, exposed to Python via PyO3.
+//! apoptosis/effort filters, exposed to Python via PyO3.
 
 mod context_apoptosis;
 mod effort_gauge;

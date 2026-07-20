@@ -74,8 +74,10 @@ Dados brutos, código e gráficos em [`benchmarks/ab-publico`](benchmarks/ab-pub
 | | |
 |---|---|
 | 🔻 **−84,7%** de tokens de entrada (mediana) | em todos os 8 modelos (Wilcoxon p ≈ 1,7e-16) |
-| ✅ **Qualidade neutra** | sucesso pareado 81,2% → 81,9% |
+| ✅ **Qualidade neutra** | sucesso pareado 81,2% → 81,9%; revalidado na v1.3.1: **0 pares divergentes** em gates executáveis |
 | 💸 **−42% vs. prompt caching grátis** | medido *em cima* do caching nativo, não no lugar dele |
+| 🧾 **−71% de custo líquido APÓS o desconto de cache** | medição direta com `cache_control` na chamada quente ($0,0105 → $0,0030) |
+| 🧠 **−89% de reasoning tokens** | orçamento dinâmico de thinking (`effort_gauge`) em mix realista — −64% com gate de qualidade pytest, 0 pares divergentes |
 | 📈 **5,2–5,5× menos tokens** carregados | em conversas que crescem, onde o caching não ajuda |
 | ⚡ **~1 µs** por decisão de poda | kernel Rust, sem modelo auxiliar |
 | 🔒 **Assinado e verificável** | ledger de carbono/custo que um terceiro confere |
@@ -108,7 +110,14 @@ contexto — para você localizar o seu próprio workload em vez de confiar num 
 
 - **Somente deleção, cache-safe por construção.** O prefixo sobrevivente fica byte-idêntico, então o prompt
   cache do seu provedor ainda acerta. Compressores neurais de prompt *reescrevem* o prompt e quebram o
-  caching; o BIOMA compõe com ele.
+  caching; o BIOMA compõe com ele. Desde a v1.3.0 a garantia é explícita: uma zona `stable_prefix` que o
+  kernel nunca toca (regressão zero medida), mais `consolidation_gain()` — a aritmética de *quando*
+  reescrever um prefixo cacheado compensa (com cache read a 0,1×, o break-even típico é 15+ chamadas).
+- **As duas fases de custo, um só proxy.** A entrada é podada pela apoptose; o *raciocínio* é orçado por
+  requisição: o opt-in `BIOMA_AUTO_EFFORT` roda o `effort_gauge` O(n) do kernel (calibrado com 1.223
+  prompts reais de agente) e define `thinking`/`reasoning` pela complexidade da tarefa — nunca acima do
+  que o cliente pediu. Medido: −89% de reasoning tokens em mix realista; −64% sob gate de qualidade
+  pytest com 0 pares divergentes.
 - **Local e agnóstico de provedor.** 100% in-process. Endureça o payload aqui e despache para **Anthropic,
   Google, OpenAI** — ou qualquer um — com o *seu* SDK. Nada para mandar para um SaaS.
 - **Honesto por padrão.** Cada requisição grava uma linha de audit JSONL (tokens antes/depois, o que foi
@@ -166,6 +175,10 @@ client = OpenAI(base_url="http://localhost:8790/v1", api_key="...")   # a única
 Comprovado com os SDKs oficiais em modelos reais: **−78% (OpenAI) / −33% (Anthropic)** de input faturado,
 resposta intacta, streaming funciona, pares de tool-call preservados.
 
+Env vars de tuning: `BIOMA_HALF_LIFE` (6.0) · `BIOMA_SAFE_THRESHOLD` (0.35; 0.2 p/ agentes tool-calling) ·
+`BIOMA_STABLE_PREFIX` (0 — unidades iniciais do histórico mantidas verbatim, zona cache-safe) ·
+`BIOMA_AUTO_EFFORT` (off — orçamento dinâmico de thinking por requisição via `effort_gauge`).
+
 ### Use como biblioteca (qualquer provedor)
 
 ```python
@@ -185,11 +198,12 @@ bioma-monitor                      # segue o audit do gateway: redução, µs, c
 
 ---
 
-## Como funciona — três primitivas
+## Como funciona — quatro primitivas
 
 | Mecanismo | O que faz |
 |---|---|
-| **Apoptose de contexto** | Decaimento por meia-vida ciente de classe desidrata histórico obsoleto/verboso antes do envio — o motor dos −84%. |
+| **Apoptose de contexto** | Decaimento por meia-vida ciente de classe desidrata histórico obsoleto/verboso antes do envio — o motor dos −84%. Cache-aware desde a 1.1.0 (`stable_prefix`, `consolidation_gain`). |
+| **Medidor de esforço** | Score O(n) de complexidade da tarefa → orçamento de thinking por requisição (`BIOMA_AUTO_EFFORT`) — o motor dos −89% de reasoning. Cada decisão vai para o audit. |
 | **Firewall cognitivo** | Redação de segredos (texto *e* pixels via OCR), detecção de cognitive-DDoS/flood, guarda de timeout de dispatch. |
 | **Barramento hormonal** | Substrato de sinalização lock-free em µs (~2M sinais/s) — o sistema nervoso do kernel. |
 
@@ -201,6 +215,7 @@ para Linux/macOS/Windows — sem toolchain Rust para instalar.
 ## Prova e reprodutibilidade
 
 - **[`benchmarks/ab-publico/results/RESULTS.md`](benchmarks/ab-publico/results/RESULTS.md)** — o writeup completo: metodologia, o dataset de 1.440 chamadas, os experimentos de caching, cada gráfico e as limitações honestas.
+- **[`reports/BIOMA_REVALIDACAO_V131.pt-BR.md`](reports/BIOMA_REVALIDACAO_V131.pt-BR.md)** — revalidação pós-1.3.1: o A/B reproduzido no kernel novo (−82,2% piloto vs −83,8% publicado, 0 pares divergentes), a medição de −71% líquido pós-cache e os experimentos de orçamento de raciocínio com gates de qualidade.
 - **[`FINDINGS.md`](FINDINGS.md)** — avaliação ground-truth, incluindo o que testamos e **refutamos** (a "mitose" multi-LLM não melhora qualidade — por isso não está no produto).
 - **Snapshot citável:** [Zenodo DOI 10.5281/zenodo.21401899](https://doi.org/10.5281/zenodo.21401899).
 - Todo número acima traça até um arquivo do repo. Reproduções que discordem são bem-vindas — resultados divergentes são linkados aqui.

@@ -9,6 +9,16 @@ below comes from `results/results.jsonl` and the caching runs; nothing is
 hand-tuned. Raw data, code, and this report live in
 [benchmarks/ab-publico](https://github.com/jonathascordeiro20/bioma-framework/tree/main/benchmarks/ab-publico).
 
+> **Revalidation note (2026-07-20, v1.3.1):** after the "purpose context" release
+> (kernel 1.1.0: cache-aware `stable_prefix` + `consolidation_gain` + `effort_gauge`;
+> gateway 1.3.1: opt-in `BIOMA_AUTO_EFFORT`), a paid pilot re-run of this A/B
+> (4 models × 5 tasks, `rerun_v131.jsonl`) reproduced these results: median input
+> reduction −82.2% (vs −83.8% here), **0 divergent pairs** on the executable gate,
+> real billed cost −65%. Two new measurements were added: **−71% net cost AFTER
+> the prompt-cache discount** (real `cache_control`) and **−89% reasoning tokens**
+> from dynamic thinking budgets (−64% under a pytest quality gate, 0 divergent
+> pairs). Full writeup: [`reports/BIOMA_REVALIDACAO_V131.pt-BR.md`](../../../reports/BIOMA_REVALIDACAO_V131.pt-BR.md).
+
 Headline findings, all measured:
 
 - **~84.7% median input-token reduction**, quality-neutral in aggregate

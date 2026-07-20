@@ -73,8 +73,10 @@ Raw data, code, and charts live in [`benchmarks/ab-publico`](benchmarks/ab-publi
 | | |
 |---|---|
 | 🔻 **−84.7%** median input tokens | across all 8 models (Wilcoxon p ≈ 1.7e-16) |
-| ✅ **Quality-neutral** | paired success 81.2% → 81.9% |
+| ✅ **Quality-neutral** | paired success 81.2% → 81.9%; revalidated on v1.3.1: **0 divergent pairs** on executable gates |
 | 💸 **−42% vs. free prompt caching** | measured on top of native caching, not instead of it |
+| 🧾 **−71% net cost AFTER the cache discount** | direct `cache_control` measurement on the warm call ($0.0105 → $0.0030) |
+| 🧠 **−89% reasoning tokens** | dynamic thinking budgets (`effort_gauge`) on a realistic turn mix — −64% with a pytest quality gate, 0 divergent pairs |
 | 📈 **5.2–5.5× fewer tokens** carried | in growing conversations, where caching can't help |
 | ⚡ **~1 µs** per pruning decision | Rust kernel, no auxiliary model |
 | 🔒 **Signed & verifiable** | carbon/cost ledger a third party can check |
@@ -107,7 +109,15 @@ so you can locate your own workload instead of trusting one number:
 
 - **Deletion-only, cache-safe by construction.** The surviving prefix stays byte-identical, so your
   provider's prompt cache still hits. Neural prompt compressors *rewrite* the prompt and break caching;
-  BIOMA composes with it instead.
+  BIOMA composes with it instead. Since v1.3.0 the guarantee is explicit: a `stable_prefix` zone the
+  kernel never touches (measured zero-regression), plus `consolidation_gain()` — the arithmetic of
+  *when* rewriting a cached prefix actually pays off (with cache reads at 0.1×, typical break-even is
+  15+ calls away).
+- **Both cost phases, one proxy.** Input is pruned by apoptosis; *reasoning* is budgeted per request:
+  opt-in `BIOMA_AUTO_EFFORT` runs the kernel's O(n) `effort_gauge` (calibrated on 1,223 real agent
+  prompts) and sets `thinking`/`reasoning` params by task complexity — never above what the client
+  asked for. Measured: −89% reasoning tokens on a realistic mix; −64% under a pytest quality gate with
+  0 divergent pairs.
 - **Local & provider-agnostic.** 100% in-process. Harden the payload here, then dispatch to
   **Anthropic, Google, OpenAI** — or anything — with *your* SDK. Nothing to send to a SaaS.
 - **Honest by default.** Every request writes a JSONL audit line (tokens before/after, what was purged,
@@ -165,6 +175,10 @@ client = OpenAI(base_url="http://localhost:8790/v1", api_key="...")   # the only
 Proven with the official SDKs on real models: **−78% (OpenAI) / −33% (Anthropic)** billed input,
 answer intact, streaming works, tool-call pairs preserved.
 
+Tuning env vars: `BIOMA_HALF_LIFE` (6.0) · `BIOMA_SAFE_THRESHOLD` (0.35; 0.2 for tool-calling agents) ·
+`BIOMA_STABLE_PREFIX` (0 — leading history units kept verbatim for prompt-cache safety) ·
+`BIOMA_AUTO_EFFORT` (off — per-request dynamic thinking budgets via `effort_gauge`).
+
 ### Use it as a library (any provider)
 
 ```python
@@ -184,11 +198,12 @@ bioma-monitor                      # follows the gateway audit log: reduction, �
 
 ---
 
-## How it works — three primitives
+## How it works — four primitives
 
 | Mechanism | What it does |
 |---|---|
-| **Context apoptosis** | Class-aware half-life decay dehydrates stale/verbose history before dispatch — the −84% engine. |
+| **Context apoptosis** | Class-aware half-life decay dehydrates stale/verbose history before dispatch — the −84% engine. Cache-aware since 1.1.0 (`stable_prefix`, `consolidation_gain`). |
+| **Effort gauge** | O(n) task-complexity score → per-request thinking budget (`BIOMA_AUTO_EFFORT`) — the −89%-reasoning engine. Every decision logged to the audit. |
 | **Cognitive firewall** | Secret redaction (text *and* pixels via OCR), cognitive-DDoS/flood detection, dispatch timeout guard. |
 | **Hormonal bus** | Lock-free µs signalling substrate (~2M signals/s) — the kernel's nervous system. |
 
@@ -200,6 +215,7 @@ for Linux/macOS/Windows — no Rust toolchain needed to install.
 ## Proof & reproducibility
 
 - **[`benchmarks/ab-publico/results/RESULTS.md`](benchmarks/ab-publico/results/RESULTS.md)** — the full writeup: methodology, the 1,440-call dataset, the caching experiments, every chart, and honest limitations.
+- **[`reports/BIOMA_REVALIDACAO_V131.pt-BR.md`](reports/BIOMA_REVALIDACAO_V131.pt-BR.md)** — post-1.3.1 revalidation: the A/B reproduced on the new kernel (−82.2% pilot vs −83.8% published, 0 divergent pairs), the −71% net-after-cache measurement, and the reasoning-budget experiments with quality gates.
 - **[`FINDINGS.md`](FINDINGS.md)** — ground-truth evaluation, including what we tested and **refuted** (multi-LLM "mitosis" does not improve quality — so it is not in the product).
 - **Citable snapshot:** [Zenodo DOI 10.5281/zenodo.21401899](https://doi.org/10.5281/zenodo.21401899).
 - Every number above traces to a file in the repo. We welcome reproductions that disagree — divergent results get linked here.

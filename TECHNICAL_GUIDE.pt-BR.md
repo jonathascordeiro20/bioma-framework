@@ -76,7 +76,7 @@ flowchart TB
     LC --> P1
 ```
 
-### 2.1 Kernel Rust (`bioma-micro`) — as duas primitivas + um detector
+### 2.1 Kernel Rust (`bioma-micro`) — as primitivas + detectores
 
 **Apoptose de contexto** (`context_apoptosis.rs`). Cada bloco do histórico
 recebe um *peso metabólico* pela classe e decai por meia-vida com a idade:
@@ -87,17 +87,37 @@ recebe um *peso metabólico* pela classe e decai por meia-vida com a idade:
 | `FACT` | 4.0 | **nunca purgado** — é aqui que vive informação durável |
 | `USER` / `ASSISTANT` | 1.0 | decai por recência |
 | `TOOL` | 0.25 | alvo primário — logs verbosos morrem primeiro |
+| `THINKING` (1.1.0) | 0.15 | blocos de raciocínio antigos — o mais barato de purgar |
 
 Fórmula da sobrevivência (modo one-shot): um bloco de idade `a` (0 = mais novo)
 sobrevive se `peso × 2^(−a/half_life) ≥ safe_threshold`. Tudo puro Rust, sem
 alocação no hot path, GIL liberado — decisão em **~1 µs** para históricos reais.
 
 Duas APIs:
-- `dehydrate(messages, half_life=6.0, safe_threshold=0.35)` — one-shot,
-  stateless; retorna blocos sobreviventes + auditoria completa
-  (`tokens_before/after`, `reduction`, `kernel_latency_us`, `blocks_purged`).
-- `ContextApoptosis(half_life, safe_threshold)` — motor incremental com estado
-  (`insert` → ciclos de `dehydrate` → `render`), contadores atômicos.
+- `dehydrate(messages, half_life=6.0, safe_threshold=0.35, stable_prefix=0)` —
+  one-shot, stateless; retorna blocos sobreviventes + auditoria completa
+  (`tokens_before/after`, `reduction`, `stable_prefix_tokens`,
+  `kernel_latency_us`, `blocks_purged`). `stable_prefix` (1.1.0) é a zona
+  cache-aware: as N primeiras mensagens ficam verbatim, garantindo prefixo
+  byte-idêntico para o prompt caching do provedor.
+- `ContextApoptosis(half_life, safe_threshold, capacity, state_capacity=64)` —
+  motor incremental com estado (`insert` → ciclos de `dehydrate` → `render`),
+  contadores atômicos. Desde a 1.1.0 carrega o **contrato de propósito**
+  (`set_purpose`), o **ledger ESTADO** (`note_state`, dedupado e limitado) e
+  `dehydrate(absorb=True)` — turnos USER/ASSISTANT purgados deixam um digest de
+  uma linha no ESTADO em vez de sumir sem rastro.
+
+Primitivas de economia e esforço (1.1.0):
+- `consolidation_gain(prefix_tokens, purgeable_tokens, calls_ahead=8, ...)` —
+  decide quando reescrever um prefixo *cacheado* compensa (defaults = preços
+  Anthropic: read 0,1× / write 1,25×). Com cache read a 0,1×, o break-even
+  típico é 15+ chamadas — a poda ingênua de prefixo cacheado sai cara.
+- `effort_gauge(text)` — score O(n) de complexidade (tamanho, verbos de tarefa
+  difícil por radical en+pt, restrições, código, dígitos, novidade; calibrado
+  com 1.223 prompts reais → 68/23/9/0,5% off/low/medium/high) → `tier` +
+  `budget_tokens` (0/1k/4k/16k) + todos os sinais brutos para auditoria. No
+  gateway: opt-in `BIOMA_AUTO_EFFORT` (nunca eleva acima do pedido do cliente;
+  rebaixa orçamento explícito só em turno confiantemente trivial).
 
 **Detector de saturação** (`saturation_scan(text, window=8)`). Fração de
 shingles de 8 tokens duplicados: ~1.0 = flood repetitivo (RED ALERT), ~0.0 =
@@ -190,7 +210,10 @@ Sem toolchain Rust necessário (wheels binários). Fontes:
 | Claude Code, sessão curta | **~0% (no-op seguro)** | idem |
 | Billing real do provider, payload idêntico | **4.604 → 32** input tokens | idem |
 | Interação com prompt caching | compõem-se: −76% de custo com cache ativo | `benchmarks/ab-publico/results/cached/ANALYSIS_CACHED.txt` |
-| Qualidade sob apoptose (6 modelos reais, probes objetivas) | paridade 100% em S1/S2; S3 purga by design | `reports/BIOMA_QUALITY_PRESERVATION.md` |
+| Medição direta com `cache_control` real (v1.3.0) | **−71% de custo líquido APÓS o desconto de cache**; zona `stable_prefix` = regressão zero | `resultados/cache_interaction.json` |
+| Orçamento dinâmico de thinking (`BIOMA_AUTO_EFFORT`, v1.3.1) | **−89% reasoning tokens** em mix realista; **−64% com gate pytest, 0 pares divergentes** | `resultados/auto_effort*.json` + `reports/BIOMA_REVALIDACAO_V131.pt-BR.md` |
+| Revalidação A/B pós-1.3.1 (piloto pago, 20 pares) | −82,2% mediana (ref. −83,8%), 0 divergentes, custo real −65% | `benchmarks/ab-publico/results/rerun_v131.jsonl` |
+| Qualidade sob apoptose (6 modelos reais, probes objetivas) | paridade 100% em S1/S2; S3 purga by design — reconfirmado no kernel 1.1.0 (3 modelos, 6/6) | `reports/BIOMA_QUALITY_PRESERVATION.md` |
 
 Relatório consolidado com todas as ressalvas:
 `benchmarks/ab-publico/results/RESULTS.md`.

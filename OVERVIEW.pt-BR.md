@@ -31,11 +31,12 @@ B.I.O.M.A. torna o *processamento* mais barato, rápido e seguro.
 4. **Latência e travas.** Chamadas sem limite (ou injeção de loop) prendem o pipeline.
 5. **Lock-in de fornecedor.** Acoplar todo o stack à API de um provedor só.
 
-## Como funciona — três mecanismos reais
+## Como funciona — quatro mecanismos reais
 
 | Mecanismo | O que faz |
 | :--- | :--- |
-| **Apoptose de contexto** | Atribui a cada bloco um peso metabólico, aplica decaimento de meia-vida agressivo, e **purga** blocos de baixo valor (logs velhos, conversa resolvida) antes do despacho — desidratando a entrada. |
+| **Apoptose de contexto** | Atribui a cada bloco um peso metabólico, aplica decaimento de meia-vida agressivo, e **purga** blocos de baixo valor (logs velhos, conversa resolvida) antes do despacho — desidratando a entrada. Cache-aware desde o kernel 1.1.0: zona `stable_prefix` mantida byte-idêntica para o prompt caching do provedor, mais `consolidation_gain()` para a economia de reescrever um prefixo cacheado. |
+| **Medidor de esforço** (1.1.0) | Score lexical O(n) de complexidade da tarefa (calibrado com 1.223 prompts reais de agente) que define um **orçamento de thinking por requisição** — turnos triviais param de pagar por raciocínio. Exposto como `effort_gauge()` e ligado no gateway como opt-in `BIOMA_AUTO_EFFORT`; nunca eleva o esforço acima do que o cliente pediu; toda decisão vai para o audit. |
 | **Firewall cognitivo** | **Redação de segredos** (valores do vault removidos do payload de saída E da resposta), **detecção de saturação** (`saturation_scan` flagra floods repetitivos → alerta vermelho `0x0F` → apoptose), e um **timeout guard** que limita cada despacho. |
 | **Barramento hormonal** | Substrato de sinalização in-memory, lock-free, atômico (μs), usado para o estado de alerta. |
 

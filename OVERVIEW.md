@@ -31,11 +31,12 @@ that thesis (multi-LLM orchestration / "mitosis") and **refuted it with ground t
 4. **Latency & hangs.** Unbounded calls (or loop-injection) stall the pipeline.
 5. **Vendor lock-in.** Coupling the whole stack to one provider's API.
 
-## How it works — three real mechanisms
+## How it works — four real mechanisms
 
 | Mechanism | What it does |
 | :--- | :--- |
-| **Context apoptosis** | Assigns each context block a metabolic weight, applies aggressive half-life decay, and **purges** low-value blocks (old logs, resolved chatter) before dispatch — dehydrating the input. |
+| **Context apoptosis** | Assigns each context block a metabolic weight, applies aggressive half-life decay, and **purges** low-value blocks (old logs, resolved chatter) before dispatch — dehydrating the input. Cache-aware since kernel 1.1.0: a `stable_prefix` zone kept byte-identical for provider prompt caching, plus `consolidation_gain()` for the rewrite-a-cached-prefix economics. |
+| **Effort gauge** (1.1.0) | An O(n) lexical task-complexity score (calibrated on 1,223 real agent prompts) that sets a **per-request thinking budget** — trivial turns stop paying for reasoning. Exposed as `effort_gauge()` and wired into the gateway as opt-in `BIOMA_AUTO_EFFORT`; never raises effort beyond the client's ask; every decision logged to the audit. |
 | **Cognitive firewall** | **Secret redaction** (vault values scrubbed from the outbound payload AND the response), **saturation detection** (`saturation_scan` flags repetitive floods → `0x0F` red alert → apoptosis), and a **timeout guard** bounding every dispatch. |
 | **Hormonal bus** | A lock-free, atomic in-memory signalling substrate (μs), used for the alert state. |
 
