@@ -1,7 +1,5 @@
 # Frugal by Payload — B.I.O.M.A. as a Client-Side Frugal-AI Layer
 
-**🌐 English · [Português](FRUGAL_AI_WHITEPAPER.pt-BR.md)**
-
 > Whitepaper aligned with the AFNOR SPEC 2314 frugal-AI framework. Every measured
 > number below has a reproducible script and a versioned report in this repository;
 > every estimated number carries declared coefficients and explicit bounds.

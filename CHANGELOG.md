@@ -21,7 +21,7 @@ All notable changes to the B.I.O.M.A. distributions (`bioma-framework` and
 
 ### bioma-micro 1.1.0 — "purpose context": both cost phases covered
 
-Backed by the feasibility study in `ESTUDO_PROPOSITO_CONTEXTO.pt-BR.md`
+Backed by the feasibility study in `PURPOSE_CONTEXT_STUDY.md`
 (input cost grows quadratically with agent-session length; reasoning grows
 linearly; cache reads at 0.1× make prefix consolidation a real decision).
 

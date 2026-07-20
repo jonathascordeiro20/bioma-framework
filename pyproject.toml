@@ -49,4 +49,4 @@ bioma-carbon-ledger = "bioma.carbon_ledger:_main"
 packages = ["bioma"]
 
 [tool.hatch.build.targets.sdist]
-include = ["bioma", "README.md", "README.pt-BR.md", "LICENSE"]
+include = ["bioma", "README.md", "LICENSE"]
