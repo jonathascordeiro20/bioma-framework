@@ -45,7 +45,7 @@ linearly; cache reads at 0.1× make prefix consolidation a real decision).
   Measured live (Sonnet, real `cache_control`): identical token profile to the
   plain dehydration arm (no regression) with the byte-identical-prefix
   guarantee formalized; net BIOMA saving **after** the cache discount: −71%
-  (`resultados/cache_interaction.json`).
+  (`results/cache_interaction.json`).
 
 ## [1.2.0] — 2026-07-19
 

@@ -214,8 +214,8 @@ No Rust toolchain needed (binary wheels). Sources:
 | Claude Code, short session | **~0% (safe no-op)** | idem |
 | Real provider billing, identical payload | **4,604 → 32** input tokens | idem |
 | Prompt-caching interaction | they compose: −76% cost with caching active | `benchmarks/ab-publico/results/cached/ANALYSIS_CACHED.txt` |
-| Direct measurement with real `cache_control` (v1.3.0) | **−71% net cost AFTER the cache discount**; `stable_prefix` zone = zero regression | `resultados/cache_interaction.json` |
-| Dynamic thinking budgets (`BIOMA_AUTO_EFFORT`, v1.3.1) | **−89% reasoning tokens** on a realistic mix; **−64% under a pytest gate, 0 divergent pairs** | `resultados/auto_effort*.json` + `reports/BIOMA_REVALIDACAO_V131.pt-BR.md` |
+| Direct measurement with real `cache_control` (v1.3.0) | **−71% net cost AFTER the cache discount**; `stable_prefix` zone = zero regression | `results/cache_interaction.json` |
+| Dynamic thinking budgets (`BIOMA_AUTO_EFFORT`, v1.3.1) | **−89% reasoning tokens** on a realistic mix; **−64% under a pytest gate, 0 divergent pairs** | `results/auto_effort*.json` + `reports/BIOMA_REVALIDATION_V131.md` |
 | Post-1.3.1 A/B revalidation (paid pilot, 20 pairs) | −82.2% median (ref. −83.8%), 0 divergent, real cost −65% | `benchmarks/ab-publico/results/rerun_v131.jsonl` |
 | Quality under apoptosis (6 real models, objective probes) | 100% parity on S1/S2; S3 purges by design — reconfirmed on kernel 1.1.0 (3 models, 6/6) | `reports/BIOMA_QUALITY_PRESERVATION.md` |
 

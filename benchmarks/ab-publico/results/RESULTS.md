@@ -17,7 +17,7 @@ hand-tuned. Raw data, code, and this report live in
 > real billed cost −65%. Two new measurements were added: **−71% net cost AFTER
 > the prompt-cache discount** (real `cache_control`) and **−89% reasoning tokens**
 > from dynamic thinking budgets (−64% under a pytest quality gate, 0 divergent
-> pairs). Full writeup: [`reports/BIOMA_REVALIDACAO_V131.pt-BR.md`](../../../reports/BIOMA_REVALIDACAO_V131.pt-BR.md).
+> pairs). Full writeup: [`reports/BIOMA_REVALIDATION_V131.md`](../../../reports/BIOMA_REVALIDATION_V131.md).
 
 Headline findings, all measured:
 

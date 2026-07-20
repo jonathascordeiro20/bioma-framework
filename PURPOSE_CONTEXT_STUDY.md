@@ -6,7 +6,7 @@ deep thinking), and how BIOMA should evolve to reduce tokens in both phases.
 
 > Historical note: this is the study that motivated the kernel 1.1.0 / gateway
 > 1.3.x "purpose context" release. Its projections have since been measured —
-> see `reports/BIOMA_REVALIDACAO_V131.pt-BR.md` for the numbers.
+> see `reports/BIOMA_REVALIDATION_V131.md` for the numbers.
 
 ---
 

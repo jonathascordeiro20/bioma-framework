@@ -1,19 +1,20 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-tests/measure_auto_effort_quality.py — auto-effort com GATE DE QUALIDADE.
+tests/measure_auto_effort_quality.py — auto-effort with a QUALITY GATE.
 
-Complementa `measure_auto_effort.py` (que mediu a mecânica de custo): aqui a
-pergunta é se o orçamento dinâmico de thinking preserva a QUALIDADE da entrega.
-Tasks reais da suíte A/B com gate EXECUTÁVEL (pytest sobre o código gerado),
-mesmo contexto completo nos dois braços — a única variável é o thinking:
+Complements `measure_auto_effort.py` (which measured cost mechanics): here the
+question is whether the dynamic thinking budget preserves delivery QUALITY.
+Real tasks from the A/B suite with an EXECUTABLE gate (pytest over the
+generated code), same full context in both arms — the only variable is
+thinking:
 
-  Braço A (naive):  direto no OpenRouter, reasoning={"max_tokens": 4000} fixo.
-  Braço B (BIOMA):  via gateway BIOMA_AUTO_EFFORT=1 + BIOMA_SAFE_THRESHOLD=0
-                    (apoptose DESLIGADA para isolar a variável de effort).
+  Arm A (naive):  direct to OpenRouter, reasoning={"max_tokens": 4000} fixed.
+  Arm B (BIOMA):  via the gateway BIOMA_AUTO_EFFORT=1 + BIOMA_SAFE_THRESHOLD=0
+                  (apoptosis OFF to isolate the effort variable).
 
-Requer:  BIOMA_AUTO_EFFORT=1 BIOMA_SAFE_THRESHOLD=0 \
-             uvicorn bioma.gateway:app --port 8793
+Requires:  BIOMA_AUTO_EFFORT=1 BIOMA_SAFE_THRESHOLD=0 \
+               uvicorn bioma.gateway:app --port 8793
 
     python tests/measure_auto_effort_quality.py
 """
@@ -42,7 +43,7 @@ except Exception:
 
 import httpx  # noqa: E402
 
-from run_benchmark import evaluate_success  # noqa: E402  (gate pytest da suíte A/B)
+from run_benchmark import evaluate_success  # noqa: E402  (the A/B suite's pytest gate)
 
 PORT = int(os.environ.get("BIOMA_GW_PORT_EFFORT", "8793"))
 GW = f"http://127.0.0.1:{PORT}/v1/chat/completions"
@@ -81,15 +82,15 @@ def call(url: str, key: str, task: dict, naive: bool) -> dict:
 def main() -> int:
     key = os.environ.get("OPENROUTER_API_KEY", "")
     if not key.startswith("sk-or"):
-        print("OPENROUTER_API_KEY ausente."); return 2
+        print("OPENROUTER_API_KEY missing."); return 2
     try:
         h = httpx.get(f"http://127.0.0.1:{PORT}/health", timeout=5)
         h.raise_for_status()
         if h.json().get("threshold") != 0.0:
-            print("gateway precisa de BIOMA_SAFE_THRESHOLD=0 (isolar o effort)")
+            print("gateway needs BIOMA_SAFE_THRESHOLD=0 (to isolate the effort variable)")
             return 3
     except httpx.HTTPError:
-        print(f"gateway não responde — inicie: BIOMA_AUTO_EFFORT=1 "
+        print(f"gateway not responding — start it: BIOMA_AUTO_EFFORT=1 "
               f"BIOMA_SAFE_THRESHOLD=0 uvicorn bioma.gateway:app --port {PORT}")
         return 3
 
@@ -97,8 +98,8 @@ def main() -> int:
         tasks = [t for t in json.load(f) if t.get("test_code")][:N_TASKS]
 
     print("=" * 92)
-    print(f"  B.I.O.M.A. — auto-effort × QUALIDADE (gate pytest, {MODEL}, "
-          f"{len(tasks)} tasks, contexto idêntico nos 2 braços)")
+    print(f"  B.I.O.M.A. — auto-effort × QUALITY (pytest gate, {MODEL}, "
+          f"{len(tasks)} tasks, identical context in both arms)")
     print("=" * 92)
 
     rows, par = [], {"both_ok": 0, "both_fail": 0, "a_only": 0, "b_only": 0}
@@ -124,22 +125,22 @@ def main() -> int:
               f"B: ok={sb} think {b['reasoning']:5,} ${b['cost']:.5f}")
 
     print("=" * 92)
-    print("## Veredito\n")
-    print(f"| Paridade (gate executável) | {par['both_ok']} both-ok · "
-          f"{par['both_fail']} both-fail · {par['a_only']} só-A · "
-          f"{par['b_only']} só-B |")
+    print("## Verdict\n")
+    print(f"| Parity (executable gate) | {par['both_ok']} both-ok · "
+          f"{par['both_fail']} both-fail · {par['a_only']} A-only · "
+          f"{par['b_only']} B-only |")
     ta, tb = tot["A"], tot["B"]
     print(f"| reasoning tokens | A {ta['reasoning']:,} → B {tb['reasoning']:,} |")
-    print(f"| custo real | A ${ta['cost']:.4f} → B ${tb['cost']:.4f} |")
+    print(f"| real cost | A ${ta['cost']:.4f} → B ${tb['cost']:.4f} |")
     divergent = par["a_only"] + par["b_only"]
-    print(f"\n{'✅ QUALIDADE PRESERVADA' if divergent == 0 else '⚠️ DIVERGÊNCIA'}: "
-          f"{divergent} par(es) divergente(s) em {len(tasks)}.")
+    print(f"\n{'✅ QUALITY PRESERVED' if divergent == 0 else '⚠️ DIVERGENCE'}: "
+          f"{divergent} divergent pair(s) out of {len(tasks)}.")
 
-    out = os.path.join(_ROOT, "resultados", "auto_effort_quality.json")
+    out = os.path.join(_ROOT, "results", "auto_effort_quality.json")
     with open(out, "w", encoding="utf-8") as f:
         json.dump({"model": MODEL, "naive_budget": NAIVE_BUDGET,
                    "parity": par, "totals": tot, "tasks": rows}, f, indent=2)
-    print(f"📄 dados brutos: {out}")
+    print(f"📄 raw data: {out}")
     return 0
 
 

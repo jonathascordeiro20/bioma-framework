@@ -213,7 +213,7 @@ for Linux/macOS/Windows — no Rust toolchain needed to install.
 ## Proof & reproducibility
 
 - **[`benchmarks/ab-publico/results/RESULTS.md`](benchmarks/ab-publico/results/RESULTS.md)** — the full writeup: methodology, the 1,440-call dataset, the caching experiments, every chart, and honest limitations.
-- **[`reports/BIOMA_REVALIDACAO_V131.pt-BR.md`](reports/BIOMA_REVALIDACAO_V131.pt-BR.md)** — post-1.3.1 revalidation: the A/B reproduced on the new kernel (−82.2% pilot vs −83.8% published, 0 divergent pairs), the −71% net-after-cache measurement, and the reasoning-budget experiments with quality gates.
+- **[`reports/BIOMA_REVALIDATION_V131.md`](reports/BIOMA_REVALIDATION_V131.md)** — post-1.3.1 revalidation: the A/B reproduced on the new kernel (−82.2% pilot vs −83.8% published, 0 divergent pairs), the −71% net-after-cache measurement, and the reasoning-budget experiments with quality gates.
 - **[`FINDINGS.md`](FINDINGS.md)** — ground-truth evaluation, including what we tested and **refuted** (multi-LLM "mitosis" does not improve quality — so it is not in the product).
 - **Citable snapshot:** [Zenodo DOI 10.5281/zenodo.21401899](https://doi.org/10.5281/zenodo.21401899).
 - Every number above traces to a file in the repo. We welcome reproductions that disagree — divergent results get linked here.

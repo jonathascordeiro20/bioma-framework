@@ -1,7 +1,5 @@
 # B.I.O.M.A. — Cognitive Firewall · Immunity Verdict
 
-**🌐 English · [Português](BIOMA_IMMUNITY_VERDICT.pt-BR.md)**
-
 > **Scope & honesty.** This is a **simulation**: the attack waves are synthetic and
 > inert (no working exploit, no real target, no jailbreak fired at a production
 > model). The **defensive measurements below are real**. The "secrets" are fake local
