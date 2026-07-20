@@ -1,0 +1,112 @@
+{
+  "model": "anthropic/claude-haiku-4.5",
+  "naive_budget": 4000,
+  "parity": {
+    "both_ok": 4,
+    "both_fail": 1,
+    "a_only": 0,
+    "b_only": 0
+  },
+  "totals": {
+    "A": {
+      "reasoning": 2352,
+      "cost": 0.045299
+    },
+    "B": {
+      "reasoning": 844,
+      "cost": 0.037949
+    }
+  },
+  "tasks": [
+    {
+      "task": "py-lru-cache",
+      "gate": "pytest",
+      "A": {
+        "in": 4917,
+        "out": 685,
+        "reasoning": 393,
+        "cost": 0.008342,
+        "success": true
+      },
+      "B": {
+        "in": 4917,
+        "out": 757,
+        "reasoning": 509,
+        "cost": 0.008702,
+        "success": true
+      }
+    },
+    {
+      "task": "py-retry-decorator",
+      "gate": "pytest",
+      "A": {
+        "in": 4921,
+        "out": 586,
+        "reasoning": 397,
+        "cost": 0.007851,
+        "success": true
+      },
+      "B": {
+        "in": 4891,
+        "out": 358,
+        "reasoning": 0,
+        "cost": 0.006681,
+        "success": true
+      }
+    },
+    {
+      "task": "py-flatten-dict",
+      "gate": "pytest",
+      "A": {
+        "in": 7539,
+        "out": 960,
+        "reasoning": 625,
+        "cost": 0.012339,
+        "success": true
+      },
+      "B": {
+        "in": 7509,
+        "out": 227,
+        "reasoning": 0,
+        "cost": 0.008644,
+        "success": true
+      }
+    },
+    {
+      "task": "py-token-bucket",
+      "gate": "pytest",
+      "A": {
+        "in": 4933,
+        "out": 886,
+        "reasoning": 594,
+        "cost": 0.009363,
+        "success": false
+      },
+      "B": {
+        "in": 4933,
+        "out": 635,
+        "reasoning": 335,
+        "cost": 0.008108,
+        "success": false
+      }
+    },
+    {
+      "task": "py-top-customers",
+      "gate": "pytest",
+      "A": {
+        "in": 4989,
+        "out": 483,
+        "reasoning": 343,
+        "cost": 0.007404,
+        "success": true
+      },
+      "B": {
+        "in": 4959,
+        "out": 171,
+        "reasoning": 0,
+        "cost": 0.005814,
+        "success": true
+      }
+    }
+  ]
+}

@@ -66,14 +66,59 @@ raciocínio com orçamento por tier. A decisão custou ~1 µs por request.
    *respostas* dominam o output — o modelo respondeu longo mesmo em turno
    trivial. Em workloads onde thinking domina o output (agentes com orçamentos
    de 16k+), a fração economizada tende ao número de reasoning.
-2. Qualidade não foi gateada neste experimento (é medição de mecânica de
+2. Qualidade não foi gateada NESTE experimento (é medição de mecânica de
    custo); os turnos difíceis atingiram o teto de `max_tokens` nos DOIS braços.
-   Gate de qualidade pareado fica para a suíte N=30 completa.
+   ~~Gate de qualidade pareado fica para a suíte completa~~ → **fechado no
+   §4.3**: mesmo desenho com gate pytest, 0 pares divergentes.
 3. Piloto é piloto: N=20 pares no A/B e N=10 turnos no auto-effort. Os números
    batem com o dataset grande, mas a reexecução completa (1.440 chamadas,
    ~$30–60) é o próximo passo quando houver saldo.
 
-## 4. Veredito
+## 4. Validação de QUALIDADE da saída (adendo 20/07, ~$0,20)
+
+Três camadas, todas com gates objetivos (nunca juiz LLM):
+
+**4.1 A/B do §2 re-analisado por par.** Os 40 runs usaram o gate EXECUTÁVEL
+(pytest sobre o código gerado — o mais forte da suíte): **0/20 pares
+divergentes**. Em nenhum caso o baseline entregou e o BIOMA não.
+
+**4.2 Sondas de chat (`test_quality_preservation.py`, kernel 1.1.0).** Valores
+exatos plantados numa sessão longa e ruidosa; a resposta final tem que contê-los.
+3 modelos (Sonnet 5, Haiku 4.5, DeepSeek V4) × 3 cenários:
+
+| Cenário | baseline | BIOMA | tokens |
+| :--- | ---: | ---: | ---: |
+| S1 fatos taggeados FACT (uso projetado) | 100% | **100%** | −97,2% |
+| S2 info em turnos recentes | 100% | **100%** | −97,3% |
+| S3 fato antigo NÃO taggeado (limite by design) | 100% | 0% | −97,9% |
+
+Paridade **6/6** nos cenários do contrato; S3 é a degradação documentada e
+esperada (informação durável deve ser taggeada `FACT` — é o contrato honesto do
+produto, não um bug).
+
+**4.3 Auto-effort com gate executável (`measure_auto_effort_quality.py`).**
+Fecha o caveat do §3: 5 tasks reais com gate pytest, contexto IDÊNTICO nos dois
+braços (apoptose desligada via `BIOMA_SAFE_THRESHOLD=0` para isolar a variável
+de thinking), braço A com budget fixo 4000 vs braço B com auto-effort:
+
+| Métrica | Resultado |
+| :--- | :--- |
+| Paridade (pytest) | **4 both-ok · 1 both-fail · 0 divergentes** |
+| reasoning tokens | 2.352 → 844 (**−64%**) |
+| custo real | $0,0453 → $0,0379 (−16%) |
+
+O gauge desligou thinking em 3 das 5 tasks e **todas passaram no gate mesmo
+assim** — thinking era desperdício nessas tasks. O único both-fail é o
+`py-token-bucket`, que falha nos dois braços em todo o piloto (dificuldade da
+task). Dados: `resultados/auto_effort_quality.json`.
+
+**Conclusão de qualidade:** em todas as camadas com gate objetivo, o que foi
+pedido via chat foi entregue com qualidade IGUAL com e sem BIOMA — 0 pares
+divergentes em 25 comparações executáveis + 6/6 nas sondas do contrato. A única
+degradação existente (S3) é o limite documentado do produto, reproduzida de
+propósito para mantê-lo honesto.
+
+## 5. Veredito
 
 A atualização **não regrediu nada** (redução e paridade reproduzidas, kernel na
 mesma classe de latência) e **adicionou uma alavanca medida**: −89% de
