@@ -1,0 +1,178 @@
+{
+  "model": "anthropic/claude-haiku-4.5",
+  "naive_budget": 4000,
+  "turns": [
+    {
+      "kind": "trivial",
+      "prompt": "sim, continue",
+      "A": {
+        "in": 123,
+        "out": 4190,
+        "reasoning": 1330,
+        "cost": 0.021073
+      },
+      "B": {
+        "in": 93,
+        "out": 2374,
+        "reasoning": 0,
+        "cost": 0.011963
+      }
+    },
+    {
+      "kind": "hard",
+      "prompt": "Projete e implemente a estrat\u00e9gia de eviction do sliding win",
+      "A": {
+        "in": 243,
+        "out": 5000,
+        "reasoning": 713,
+        "cost": 0.025243
+      },
+      "B": {
+        "in": 243,
+        "out": 5000,
+        "reasoning": 238,
+        "cost": 0.025243
+      }
+    },
+    {
+      "kind": "trivial",
+      "prompt": "ok, pode seguir",
+      "A": {
+        "in": 125,
+        "out": 2533,
+        "reasoning": 123,
+        "cost": 0.01279
+      },
+      "B": {
+        "in": 95,
+        "out": 1644,
+        "reasoning": 0,
+        "cost": 0.008315
+      }
+    },
+    {
+      "kind": "trivial",
+      "prompt": "valeu, ficou bom",
+      "A": {
+        "in": 127,
+        "out": 257,
+        "reasoning": 142,
+        "cost": 0.001412
+      },
+      "B": {
+        "in": 97,
+        "out": 2883,
+        "reasoning": 0,
+        "cost": 0.014512
+      }
+    },
+    {
+      "kind": "hard",
+      "prompt": "Analise o modo de falha quando o Redis particiona: derive o ",
+      "A": {
+        "in": 208,
+        "out": 5000,
+        "reasoning": 1419,
+        "cost": 0.025208
+      },
+      "B": {
+        "in": 208,
+        "out": 5000,
+        "reasoning": 222,
+        "cost": 0.025208
+      }
+    },
+    {
+      "kind": "trivial",
+      "prompt": "continua",
+      "A": {
+        "in": 122,
+        "out": 3107,
+        "reasoning": 137,
+        "cost": 0.015657
+      },
+      "B": {
+        "in": 92,
+        "out": 2498,
+        "reasoning": 0,
+        "cost": 0.012582
+      }
+    },
+    {
+      "kind": "trivial",
+      "prompt": "sim",
+      "A": {
+        "in": 121,
+        "out": 2223,
+        "reasoning": 214,
+        "cost": 0.011236
+      },
+      "B": {
+        "in": 91,
+        "out": 1856,
+        "reasoning": 0,
+        "cost": 0.009371
+      }
+    },
+    {
+      "kind": "hard",
+      "prompt": "Otimize o caminho quente: analise onde est\u00e3o as aloca\u00e7\u00f5es, c",
+      "A": {
+        "in": 198,
+        "out": 4027,
+        "reasoning": 522,
+        "cost": 0.020333
+      },
+      "B": {
+        "in": 198,
+        "out": 4041,
+        "reasoning": 210,
+        "cost": 0.020403
+      }
+    },
+    {
+      "kind": "trivial",
+      "prompt": "beleza, pr\u00f3ximo passo",
+      "A": {
+        "in": 127,
+        "out": 1004,
+        "reasoning": 196,
+        "cost": 0.005147
+      },
+      "B": {
+        "in": 97,
+        "out": 986,
+        "reasoning": 0,
+        "cost": 0.005027
+      }
+    },
+    {
+      "kind": "trivial",
+      "prompt": "ok",
+      "A": {
+        "in": 121,
+        "out": 4106,
+        "reasoning": 1378,
+        "cost": 0.020651
+      },
+      "B": {
+        "in": 91,
+        "out": 1219,
+        "reasoning": 0,
+        "cost": 0.006186
+      }
+    }
+  ],
+  "totals": {
+    "A": {
+      "out": 31447,
+      "reasoning": 6174,
+      "cost": 0.15875
+    },
+    "B": {
+      "out": 27501,
+      "reasoning": 670,
+      "cost": 0.13881000000000002
+    }
+  }
+}
