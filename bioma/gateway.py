@@ -36,6 +36,10 @@ and mask secrets visible in the pixels before dispatch — opt-in, since OCR is
 off the hot path only when enabled (see `reports/BIOMA_PIXEL_SECRETS.md`).
 Tuning: `BIOMA_HALF_LIFE` (6.0), `BIOMA_SAFE_THRESHOLD` (0.35) and
 `BIOMA_STABLE_PREFIX` (0 — leading history units kept verbatim, cache-aware zone).
+Auto effort (`BIOMA_AUTO_EFFORT` set): per-request dynamic thinking budgets via
+the kernel's `effort_gauge` — fills absent reasoning params by task complexity,
+downgrades an explicit Anthropic budget only on confidently-trivial turns, and
+never raises effort beyond what the client asked for.
 """
 from __future__ import annotations
 
@@ -278,6 +282,77 @@ def dehydrate_anthropic(messages: list[dict], *, half_life: float,
 
 
 # --------------------------------------------------------------------------- #
+#  Auto effort — dynamic thinking budgets from the kernel's effort_gauge
+# --------------------------------------------------------------------------- #
+_EFFORT_TIERS = {"low": "low", "medium": "medium", "high": "high"}
+_MIN_THINKING_BUDGET = 1024  # Anthropic minimum for thinking.budget_tokens
+
+
+def _last_user_text(messages: list[dict]) -> str:
+    for m in reversed(messages or []):
+        if m.get("role") == "user":
+            c = m.get("content")
+            if isinstance(c, str):
+                return c
+            if isinstance(c, list):
+                return " ".join(b.get("text", "") for b in c
+                                if isinstance(b, dict) and b.get("type") == "text")
+    return ""
+
+
+def apply_auto_effort(body: dict, *, surface: str) -> Optional[dict]:
+    """Set the request's reasoning budget from the kernel's `effort_gauge`
+    (kernel ≥ 1.1.0). Conservative contract:
+
+    - NEVER raises effort beyond what the client explicitly asked for;
+    - OpenAI surface: only fills in when `reasoning`/`reasoning_effort` are
+      absent (tier off → reasoning disabled; otherwise effort by tier);
+    - Anthropic surface: an explicit thinking budget is only DOWNGRADED (to the
+      1024 minimum) when the gauge is confident the turn is trivial (tier off);
+      thinking is only ADDED for medium/high when the request is compatible
+      (temperature absent or 1, and room left under max_tokens).
+
+    Returns an audit fragment {tier, score, action} or None when inactive."""
+    gauge = getattr(kernel, "effort_gauge", None)
+    if gauge is None:
+        return None
+    text = _last_user_text(body.get("messages") or [])
+    if not text:
+        return None
+    g = gauge(text)
+    tier, score, budget = g["tier"], round(float(g["score"]), 3), int(g["budget_tokens"])
+    action = "none"
+
+    if surface == "openai":
+        if "reasoning" in body or "reasoning_effort" in body:
+            action = "client_set"
+        elif tier == "off":
+            body["reasoning"] = {"enabled": False}
+            action = "disabled"
+        else:
+            body["reasoning"] = {"effort": _EFFORT_TIERS[tier]}
+            action = f"effort={tier}"
+    else:  # anthropic
+        thinking = body.get("thinking")
+        if isinstance(thinking, dict) and thinking.get("type") == "enabled":
+            cur = int(thinking.get("budget_tokens") or 0)
+            if tier == "off" and cur > _MIN_THINKING_BUDGET:
+                thinking["budget_tokens"] = _MIN_THINKING_BUDGET
+                action = f"downgraded {cur}->{_MIN_THINKING_BUDGET}"
+            else:
+                action = "client_set"
+        elif thinking is None and tier in ("medium", "high"):
+            temp = body.get("temperature")
+            max_tokens = body.get("max_tokens")
+            if (temp in (None, 1, 1.0) and isinstance(max_tokens, int)
+                    and max_tokens > budget + 256):
+                body["thinking"] = {"type": "enabled", "budget_tokens": budget}
+                action = f"added {budget}"
+        # tier off/low with no thinking field: already not thinking — no-op
+    return {"tier": tier, "score": score, "action": action}
+
+
+# --------------------------------------------------------------------------- #
 #  The gateway app
 # --------------------------------------------------------------------------- #
 def create_app(*, upstream: Optional[str] = None,
@@ -295,6 +370,8 @@ def create_app(*, upstream: Optional[str] = None,
     # cache-aware zone: leading history UNITS kept verbatim so a provider
     # prompt-cache prefix stays byte-identical (kernel ≥ 1.1.0)
     app.state.stable_prefix = int(os.environ.get("BIOMA_STABLE_PREFIX", "0"))
+    # opt-in dynamic thinking budgets via the kernel's effort_gauge (≥ 1.1.0)
+    app.state.auto_effort = os.environ.get("BIOMA_AUTO_EFFORT", "") != ""
     app.state.audit_path = os.environ.get("BIOMA_AUDIT_LOG", "bioma_gateway_audit.jsonl")
     app.state.client = httpx.AsyncClient(transport=transport, timeout=600.0)
     # opt-in pixel secret redaction (OCR is slow → off by default). A lazily-built
@@ -371,6 +448,8 @@ def create_app(*, upstream: Optional[str] = None,
                 "reduction": round(float(audit["reduction"]), 4),
                 "kernel_latency_us": round(float(audit["kernel_latency_us"]), 2),
                 "blocks_purged": int(audit["blocks_purged"])}
+        if audit.get("effort"):
+            line["effort"] = audit["effort"]
         try:
             with open(app.state.audit_path, "a", encoding="utf-8") as f:
                 f.write(json.dumps(line) + "\n")
@@ -397,6 +476,8 @@ def create_app(*, upstream: Optional[str] = None,
         if app.state.redact_images:
             redact_image_secrets(survivors, _image_redactor())
         body["messages"] = survivors
+        if app.state.auto_effort:
+            audit["effort"] = apply_auto_effort(body, surface="openai")
         stream = bool(body.get("stream", False))
         _audit_line(str(body.get("model", "?")), audit, stream)
         # OpenAI SDKs ignore unknown top-level fields → safe to inject the audit
@@ -415,6 +496,8 @@ def create_app(*, upstream: Optional[str] = None,
         if app.state.redact_images:
             redact_image_secrets(survivors, _image_redactor())
         body["messages"] = survivors
+        if app.state.auto_effort:
+            audit["effort"] = apply_auto_effort(body, surface="anthropic")
         stream = bool(body.get("stream", False))
         _audit_line(str(body.get("model", "?")), audit, stream)
         # the Anthropic response schema is strict; keep it clean (JSONL audit only)

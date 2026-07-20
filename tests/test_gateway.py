@@ -306,3 +306,76 @@ def test_stable_prefix_keeps_leading_units_verbatim():
     assert audit.get("stable_prefix_tokens", 0) > 0
     # order preserved and tail (current query) untouched
     assert kept[-1] == msgs[-1]
+
+
+# ---- auto effort (BIOMA_AUTO_EFFORT) -------------------------------------- #
+from bioma.gateway import apply_auto_effort  # noqa: E402
+
+_HARD = ("Projete e implemente a arquitetura do módulo de cache do kernel. "
+         "Deve garantir invariantes de consistência entre gerações, nunca "
+         "perder dados durante a poda, e otimize o throughput no hot path. "
+         "Analise os trade-offs de memória versus latência, compare as "
+         "estratégias LRU e ARC sob carga adversarial, derive o custo esperado "
+         "em tokens por chamada e prove os limites superiores. Requisito "
+         "obrigatório: latência abaixo de 5ms no percentil 99; restrição dura: "
+         "sem alocação dinâmica no caminho quente; sempre preservar blocos "
+         "SYSTEM e FACT.")
+
+
+def test_auto_effort_openai_fills_absent_only():
+    body = {"messages": [{"role": "user", "content": "sim, continue"}]}
+    fx = apply_auto_effort(body, surface="openai")
+    assert fx["tier"] == "off" and body["reasoning"] == {"enabled": False}
+
+    body = {"messages": [{"role": "user", "content": _HARD}]}
+    fx = apply_auto_effort(body, surface="openai")
+    assert fx["tier"] in ("medium", "high")
+    assert body["reasoning"] == {"effort": fx["tier"]}
+
+    # explicit client setting is untouched
+    body = {"messages": [{"role": "user", "content": "sim"}],
+            "reasoning": {"effort": "high"}}
+    fx = apply_auto_effort(body, surface="openai")
+    assert fx["action"] == "client_set" and body["reasoning"] == {"effort": "high"}
+
+
+def test_auto_effort_anthropic_downgrades_trivial_never_upgrades():
+    # trivial turn with a fat explicit budget → clamped to the 1024 minimum
+    body = {"messages": [{"role": "user", "content": "ok, prossiga"}],
+            "thinking": {"type": "enabled", "budget_tokens": 16000}}
+    fx = apply_auto_effort(body, surface="anthropic")
+    assert body["thinking"]["budget_tokens"] == 1024 and "downgraded" in fx["action"]
+
+    # non-trivial turn: explicit budget respected verbatim
+    body = {"messages": [{"role": "user", "content": _HARD}],
+            "thinking": {"type": "enabled", "budget_tokens": 2048}}
+    fx = apply_auto_effort(body, surface="anthropic")
+    assert body["thinking"]["budget_tokens"] == 2048 and fx["action"] == "client_set"
+
+
+def test_auto_effort_anthropic_adds_only_when_compatible():
+    # hard task, no thinking, room under max_tokens, no temperature → added
+    body = {"messages": [{"role": "user", "content": _HARD}], "max_tokens": 32000}
+    fx = apply_auto_effort(body, surface="anthropic")
+    assert body.get("thinking", {}).get("type") == "enabled"
+    assert body["thinking"]["budget_tokens"] == int(fx["action"].split()[-1])
+
+    # incompatible (temperature=0) → never added
+    body = {"messages": [{"role": "user", "content": _HARD}],
+            "max_tokens": 32000, "temperature": 0.0}
+    fx = apply_auto_effort(body, surface="anthropic")
+    assert "thinking" not in body and fx["action"] == "none"
+
+    # trivial turn, no thinking field → stays off
+    body = {"messages": [{"role": "user", "content": "valeu"}], "max_tokens": 32000}
+    apply_auto_effort(body, surface="anthropic")
+    assert "thinking" not in body
+
+
+def test_auto_effort_disabled_by_default(client):
+    # without BIOMA_AUTO_EFFORT the gateway must not touch reasoning params
+    r = client.post("/v1/chat/completions",
+                    json={"model": "m", "messages": _long_session()})
+    assert r.status_code == 200
+    fwd = r.json()["_forwarded_messages"]
+    assert all("reasoning" not in m for m in fwd)

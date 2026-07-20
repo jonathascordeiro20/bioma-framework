@@ -3,6 +3,20 @@
 All notable changes to the B.I.O.M.A. distributions (`bioma-framework` and
 `bioma-micro`) are documented here. Versions follow [SemVer](https://semver.org).
 
+## [1.3.1] — 2026-07-20
+
+### bioma-framework — dynamic thinking budgets at the proxy
+
+- `BIOMA_AUTO_EFFORT` (opt-in): the gateway now runs the kernel's
+  `effort_gauge` on each request's current query and sets the reasoning
+  budget accordingly. Conservative contract — never raises effort beyond what
+  the client asked for; OpenAI surface only fills absent `reasoning` params
+  (trivial turn → `{"enabled": false}`); Anthropic surface only downgrades an
+  explicit `thinking.budget_tokens` to the 1024 minimum on confidently-trivial
+  turns, and only adds thinking for medium/high tasks when the request is
+  compatible (temperature absent or 1, room under `max_tokens`). Every
+  decision is logged to the JSONL audit (`effort: {tier, score, action}`).
+
 ## [1.3.0] — 2026-07-20
 
 ### bioma-micro 1.1.0 — "purpose context": both cost phases covered
