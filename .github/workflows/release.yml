@@ -94,7 +94,7 @@ jobs:
     permissions:
       id-token: write   # OIDC for Trusted Publishing
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with: { path: staged }
       - name: Collect bioma_micro artifacts
         run: mkdir -p dist-kernel && find staged -path '*kernel*' -name '*.whl' -o -path '*kernel*' -name '*.tar.gz' | xargs -I{} cp {} dist-kernel/
@@ -109,7 +109,7 @@ jobs:
     permissions:
       id-token: write   # OIDC for Trusted Publishing
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with: { path: staged }
       - name: Collect bioma-langchain artifacts
         run: mkdir -p dist-langchain && cp staged/langchain-dist/* dist-langchain/
@@ -124,7 +124,7 @@ jobs:
     permissions:
       id-token: write   # OIDC for Trusted Publishing
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with: { path: staged }
       - name: Collect bioma artifacts
         run: mkdir -p dist-bioma && cp staged/bioma-dist/* dist-bioma/
@@ -141,7 +141,7 @@ jobs:
     permissions:
       id-token: write   # OIDC for Trusted Publishing
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with: { path: staged }
       - name: Collect bioma-suite artifacts
         run: mkdir -p dist-suite && cp staged/suite-dist/* dist-suite/
