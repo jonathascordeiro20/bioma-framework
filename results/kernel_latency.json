@@ -1,0 +1,179 @@
+{
+  "layer1": [
+    {
+      "size": "~1k tok",
+      "config": "default",
+      "tokens": 6437,
+      "path_ms": 0.023300002794712782,
+      "path_p95_ms": 0.09800000407267362,
+      "kernel_us": 0.2,
+      "tok_per_ms": 276266.0612839359,
+      "reduction": 0.9967376106882088
+    },
+    {
+      "size": "~1k tok",
+      "config": "agent (0.2+q8+auto)",
+      "tokens": 6425,
+      "path_ms": 0.019700004486367106,
+      "path_p95_ms": 0.03169999399688095,
+      "kernel_us": 0.1,
+      "tok_per_ms": 326142.0577059391,
+      "reduction": 0.0
+    },
+    {
+      "size": "~5k tok",
+      "config": "default",
+      "tokens": 32137,
+      "path_ms": 0.07199999527074397,
+      "path_p95_ms": 0.13729999773204327,
+      "kernel_us": 0.2,
+      "tok_per_ms": 446347.2515401449,
+      "reduction": 0.9990353797803155
+    },
+    {
+      "size": "~5k tok",
+      "config": "agent (0.2+q8+auto)",
+      "tokens": 32119,
+      "path_ms": 0.08489999163430184,
+      "path_p95_ms": 0.25800000003073364,
+      "kernel_us": 0.2,
+      "tok_per_ms": 378315.7027664897,
+      "reduction": 0.5994582645785984
+    },
+    {
+      "size": "~25k tok",
+      "config": "default",
+      "tokens": 160657,
+      "path_ms": 0.32469999860040843,
+      "path_p95_ms": 0.7255999953486025,
+      "kernel_us": 0.6,
+      "tok_per_ms": 494785.95840005623,
+      "reduction": 0.9998070423324225
+    },
+    {
+      "size": "~25k tok",
+      "config": "agent (0.2+q8+auto)",
+      "tokens": 160645,
+      "path_ms": 0.44579998939298093,
+      "path_p95_ms": 0.8308999967994168,
+      "kernel_us": 0.7,
+      "tok_per_ms": 360352.1844375561,
+      "reduction": 0.9198543372031498
+    },
+    {
+      "size": "~100k tok",
+      "config": "default",
+      "tokens": 642607,
+      "path_ms": 2.7923000016016886,
+      "path_p95_ms": 3.1614999898010865,
+      "kernel_us": 2.4,
+      "tok_per_ms": 230135.3721417451,
+      "reduction": 0.9999517590066712
+    },
+    {
+      "size": "~100k tok",
+      "config": "agent (0.2+q8+auto)",
+      "tokens": 642603,
+      "path_ms": 3.3430000039516017,
+      "path_p95_ms": 3.487399997538887,
+      "kernel_us": 3.3,
+      "tok_per_ms": 192223.45176201302,
+      "reduction": 0.9899518053915092
+    },
+    {
+      "size": "~400k tok",
+      "config": "default",
+      "tokens": 2571009,
+      "path_ms": 12.749400004395284,
+      "path_p95_ms": 13.467199998558499,
+      "kernel_us": 12.8,
+      "tok_per_ms": 201657.25438951317,
+      "reduction": 0.9999859977152938
+    },
+    {
+      "size": "~400k tok",
+      "config": "agent (0.2+q8+auto)",
+      "tokens": 2571003,
+      "path_ms": 13.518499996280298,
+      "path_p95_ms": 13.764500006800517,
+      "kernel_us": 12.1,
+      "tok_per_ms": 190184.044140062,
+      "reduction": 0.9974854171698749
+    },
+    {
+      "size": "~1M tok",
+      "config": "default",
+      "tokens": 6429009,
+      "path_ms": 34.348799992585555,
+      "path_p95_ms": 34.46760000952054,
+      "kernel_us": 19.5,
+      "tok_per_ms": 187168.37273464428,
+      "reduction": 0.9999944003811474
+    },
+    {
+      "size": "~1M tok",
+      "config": "agent (0.2+q8+auto)",
+      "tokens": 6429003,
+      "path_ms": 37.22669999115169,
+      "path_p95_ms": 38.395800002035685,
+      "kernel_us": 19.2,
+      "tok_per_ms": 172698.7082263024,
+      "reduction": 0.9989944008425568
+    }
+  ],
+  "layer2": [
+    {
+      "size": "~1k tok",
+      "direct_ms": 0.916199991479516,
+      "gateway_ms": 2.5133000017376617,
+      "overhead_ms": 1.5971000102581456
+    },
+    {
+      "size": "~5k tok",
+      "direct_ms": 0.7983999967109412,
+      "gateway_ms": 2.820199995767325,
+      "overhead_ms": 2.021799999056384
+    },
+    {
+      "size": "~25k tok",
+      "direct_ms": 1.3295999960973859,
+      "gateway_ms": 3.833499999018386,
+      "overhead_ms": 2.503900002921
+    },
+    {
+      "size": "~100k tok",
+      "direct_ms": 3.2610999915050343,
+      "gateway_ms": 8.969800008344464,
+      "overhead_ms": 5.70870001683943
+    },
+    {
+      "size": "~400k tok",
+      "direct_ms": 11.319999990519136,
+      "gateway_ms": 27.327599993441254,
+      "overhead_ms": 16.007600002922118
+    },
+    {
+      "size": "~1M tok",
+      "direct_ms": 26.969799990183674,
+      "gateway_ms": 64.48280000768136,
+      "overhead_ms": 37.51300001749769
+    }
+  ],
+  "layer3": [
+    {
+      "size": "~1k tok",
+      "direct_ms": 2921.994750002341,
+      "gateway_ms": 4071.931600003154
+    },
+    {
+      "size": "~10k tok",
+      "direct_ms": 4275.3378999987035,
+      "gateway_ms": 2233.309349998308
+    },
+    {
+      "size": "~40k tok",
+      "direct_ms": 2183.550149995426,
+      "gateway_ms": 1276.0692999945604
+    }
+  ]
+}
