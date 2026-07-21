@@ -1,0 +1,30 @@
+{
+  "model": "anthropic/claude-sonnet-5",
+  "A": {
+    "error": "Autocompact is thrashing: the context refilled to the limit within 3 turns of the previous compact, 3 times in a row. A ",
+    "cost": 1.9678566,
+    "turns": 10,
+    "in_tok": 29109,
+    "solved": false
+  },
+  "B": {
+    "error": null,
+    "cost": 1.4535736499999998,
+    "turns": 8,
+    "in_tok": 28755,
+    "solved": true
+  },
+  "audit": {
+    "before": 34476,
+    "after": 34476,
+    "requests": 8
+  },
+  "A_retry": {
+    "error": null,
+    "cost": 1.4834154,
+    "turns": 9,
+    "in_tok": 29104,
+    "solved": true,
+    "note": "retry isolado do braco A apos autocompact thrashing transitorio no run 1"
+  }
+}

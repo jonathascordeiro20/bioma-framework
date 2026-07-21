@@ -3,6 +3,54 @@
 All notable changes to the B.I.O.M.A. distributions (`bioma-framework` and
 `bioma-micro`) are documented here. Versions follow [SemVer](https://semver.org).
 
+## [1.4.0] — 2026-07-21
+
+### bioma-framework — cache-aware batching, protocol invariants, Auto-FACT, rehydration
+
+Born from a real end-to-end validation with the actual Claude Code CLI
+(5-bug long session through the gateway against the native Anthropic API —
+see `reports/BIOMA_E2E_LONG_SESSION.md` and
+`reports/BIOMA_VALIDATION_EVOLUTIONS.md`). Measured on the same task, old vs
+new config: **same quality (5/5 pytest green), −28% total accounted cost,
+−63% cache-write waste, provider cache hit-rate 91.3% → 97.2%.**
+All new knobs are opt-in; defaults preserve 1.3.x behavior.
+
+- **`BIOMA_PURGE_QUANTUM`** (0 = off): quantized purge boundary — purge
+  decisions freeze in steps of K units, so the pruned output stays
+  byte-identical for K consecutive turns and the provider prompt cache hits
+  on the PRUNED context; the invalidation is paid once per batch.
+- **`BIOMA_CACHE_HYSTERESIS`** (0.0 = off): purges below this potential
+  reduction are HELD (history forwarded untouched, cache prefix intact);
+  audit records `held` + `potential_reduction`.
+- **`BIOMA_STABLE_PREFIX=auto`**: stable zone derived per request from the
+  client's first `cache_control` breakpoint — no manual tuning.
+- **`BIOMA_AUTO_FACT`** (off): conservative heuristic (EN + pt-BR) that
+  promotes short USER turns that read like durable constraints to FACT —
+  closes the untagged-requirement gap (scenario S3) without user discipline.
+  Never promotes tool output or texts >600 chars.
+- **`BIOMA_REHYDRATE_STORE=<dir>`** (off): purged units persist locally,
+  content-addressed by SHA-256 (`purged_hashes` in the audit line);
+  `GET /v1/rehydrate/{hash}` returns any pruned block byte-identical.
+  Apoptosis becomes hibernation — nothing is lost.
+- **Protocol invariants (always on):** the Anthropic surface now floors the
+  stable prefix at 1 (the conversation anchor is never pruned — strict
+  Messages endpoints 400 otherwise) and a deletion-only repair pass
+  guarantees no leading non-user turn, no orphan `tool_result`, no dangling
+  `tool_use` in the pruned output.
+- **Gateway:** forwards the `anthropic-beta` header (enables native Anthropic
+  upstream with subscription OAuth pass-through; OpenRouter-style upstreams
+  ignore it).
+- **Tests:** +23 (protocol invariants incl. seeded fuzz, evolutions incl. an
+  Auto-FACT precision corpus with zero tolerated false positives, quantum
+  prefix-stability property) plus a deterministic Claude Code session
+  simulator (`tests/simulate_claude_code_session.py`) and a long-session E2E
+  harness (`tests/e2e_claude_code_long.py`).
+
+Recommended agent-traffic config (e.g. Claude Code):
+`BIOMA_SAFE_THRESHOLD=0.2 BIOMA_STABLE_PREFIX=auto BIOMA_PURGE_QUANTUM=8
+BIOMA_CACHE_HYSTERESIS=0.30 BIOMA_AUTO_FACT=1
+BIOMA_REHYDRATE_STORE=~/.bioma/hibernation`
+
 ## [1.3.1] — 2026-07-20
 
 ### bioma-framework — dynamic thinking budgets at the proxy

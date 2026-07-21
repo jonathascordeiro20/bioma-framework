@@ -24,3 +24,6 @@ bioevents.jsonl
 # gateway per-request audit log (runtime)
 bioma_gateway_audit.jsonl
 reference_pilot_audit.jsonl
+
+# rehydration store (runtime, may hold session content)
+.bioma_hibernation/

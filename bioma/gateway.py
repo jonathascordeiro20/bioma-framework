@@ -35,7 +35,32 @@ Pixel secret redaction (`BIOMA_REDACT_IMAGE_SECRETS` set): OCR every image part
 and mask secrets visible in the pixels before dispatch — opt-in, since OCR is
 off the hot path only when enabled (see `reports/BIOMA_PIXEL_SECRETS.md`).
 Tuning: `BIOMA_HALF_LIFE` (6.0), `BIOMA_SAFE_THRESHOLD` (0.35) and
-`BIOMA_STABLE_PREFIX` (0 — leading history units kept verbatim, cache-aware zone).
+`BIOMA_STABLE_PREFIX` (0 — leading history units kept verbatim, cache-aware zone;
+the Anthropic surface enforces a minimum of 1 so `messages[0]` is never purged —
+strict upstreams 400 on a pruned conversation anchor).
+`BIOMA_CACHE_HYSTERESIS` (0.0 = off): only apply a purge when the potential
+reduction reaches this fraction — below it the history is forwarded untouched so
+the provider prompt-cache prefix stays byte-identical. Purges then happen in
+batches: one cache invalidation buys a large reduction, instead of many small
+purges each breaking the cache for single-digit savings.
+`BIOMA_PURGE_QUANTUM` (0 = off): quantized purge boundary — with K, only units
+below `B = (n_units // K) * K` are eligible for purging; the rest is frozen
+verbatim. B advances once every K new units, so the pruned output stays
+byte-identical for K consecutive turns and the provider cache hits on the
+PRUNED context; the invalidation is paid once per batch. Recommended for
+agent traffic (e.g. Claude Code): K=8 with hysteresis 0.30.
+`BIOMA_STABLE_PREFIX=auto`: derives the stable zone per request from the
+client's FIRST `cache_control` breakpoint — everything before it (system,
+tools, project brief) is the prefix the provider already cached and stays
+byte-identical; no manual tuning.
+`BIOMA_AUTO_FACT` (off): conservative heuristic that promotes short USER turns
+that read like durable constraints ("must/never/sempre/lembre/we agreed…") to
+the FACT class, closing the untagged-requirement gap without user discipline.
+Never promotes tool output or texts >600 chars (no context inflation).
+`BIOMA_REHYDRATE_STORE=<dir>` (off): every purged unit is persisted locally,
+content-addressed by SHA-256 (`purged_hashes` in the audit line), and can be
+brought back via `GET /v1/rehydrate/{hash}` — apoptosis becomes hibernation,
+nothing is lost. Local-only, same trust domain as the gateway.
 Auto effort (`BIOMA_AUTO_EFFORT` set): per-request dynamic thinking budgets via
 the kernel's `effort_gauge` — fills absent reasoning params by task complexity,
 downgrades an explicit Anthropic budget only on confidently-trivial turns, and
@@ -43,8 +68,10 @@ never raises effort beyond what the client asked for.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import os
+import re
 import time
 from contextlib import asynccontextmanager
 from typing import Any, Optional
@@ -120,7 +147,26 @@ def _is_tool_unit(msgs: list[dict]) -> bool:
     return False
 
 
-def _unit_signal(msgs: list[dict]) -> int:
+# Auto-FACT — CONSERVATIVE heuristic for durable constraints. Only promotes
+# short USER turns that read like a requirement/decision/reminder; never
+# promotes tool output (the purge target) or long texts (context inflation).
+_DURABLE_RE = re.compile(
+    r"(?:\b(?:must|never|always|shall|required|remember|reminder|important)\b"
+    r"|\bdon'?t forget\b|\bnote this\b|\b(?:we|as) agreed\b|\bdecision:"
+    r"|\b(?:deve[mr]?|nunca|sempre|obrigat[óo]ri[oa]|lembre(?:te)?|anote"
+    r"|importante|decidimos|combinamos|ficou definido)\b"
+    r"|\bn[ãa]o (?:pode|esque[çc]a)\b)",
+    re.IGNORECASE)
+_AUTO_FACT_MAX_CHARS = 600
+
+
+def looks_durable(text: str) -> bool:
+    """True when the text reads like a durable constraint worthy of FACT."""
+    t = (text or "").strip()
+    return bool(t) and len(t) <= _AUTO_FACT_MAX_CHARS and bool(_DURABLE_RE.search(t))
+
+
+def _unit_signal(msgs: list[dict], auto_fact: bool = False) -> int:
     first = msgs[0]
     role = first.get("role", "user")
     content = first.get("content")
@@ -135,7 +181,19 @@ def _unit_signal(msgs: list[dict]) -> int:
         return kernel.TOOL
     if role == "assistant":
         return kernel.ASSISTANT
+    if auto_fact and looks_durable(_first_text(content)):
+        return kernel.FACT
     return kernel.USER
+
+
+def _auto_stable_prefix(units: list[list[dict]]) -> int:
+    """`BIOMA_STABLE_PREFIX=auto`: the stable zone ends at the client's FIRST
+    `cache_control` breakpoint — everything before it is the prefix the
+    provider already cached (system/tools/brief) and must stay byte-identical."""
+    for i, unit in enumerate(units):
+        if any(_has_cache_control(m.get("content")) for m in unit):
+            return i + 1
+    return 0
 
 
 def _group_units(messages: list[dict]) -> list[list[dict]]:
@@ -161,13 +219,33 @@ _EMPTY_AUDIT = {"tokens_before": 0, "tokens_after": 0, "reduction": 0.0,
                 "kernel_latency_us": 0.0, "blocks_purged": 0}
 
 
+def apply_cache_hysteresis(messages: list[dict], survivors: list[dict],
+                           audit: dict, hysteresis: float) -> tuple[list[dict], dict]:
+    """Cache-aware purge batching. Dehydration is its own dry-run (~1µs): when
+    the potential reduction is below `hysteresis`, HOLD — forward the original
+    messages untouched so the provider prompt-cache prefix stays byte-identical.
+    Junk keeps accumulating until one batched purge buys a big reduction, paying
+    the cache invalidation once instead of on every small purge. Stateless by
+    construction: the decision derives only from the current request."""
+    if hysteresis <= 0 or float(audit.get("reduction", 0.0)) >= hysteresis:
+        return survivors, audit
+    held = dict(audit, held=True,
+                potential_reduction=round(float(audit.get("reduction", 0.0)), 4),
+                tokens_after=audit["tokens_before"], reduction=0.0,
+                blocks_purged=0)
+    return messages, held
+
+
 def _apoptose_units(units: list[list[dict]], tail: list[dict], *,
                     half_life: float, safe_threshold: float,
-                    stable_prefix: int = 0) -> tuple[list[dict], dict]:
+                    stable_prefix: int = 0,
+                    auto_fact: bool = False) -> tuple[list[dict], dict]:
     """Run the kernel over pre-grouped history units and reassemble survivors + tail.
     `stable_prefix` = number of leading UNITS kept verbatim (cache-aware zone);
-    passed through when the installed kernel supports it (≥1.1.0)."""
-    msgs = [(f"[U{idx}]" + _unit_text(unit), _unit_signal(unit))
+    passed through when the installed kernel supports it (≥1.1.0). The purged
+    units ride along in `audit["_purged_units"]` (transient, never serialized)
+    so the caller can feed the rehydration store."""
+    msgs = [(f"[U{idx}]" + _unit_text(unit), _unit_signal(unit, auto_fact))
             for idx, unit in enumerate(units)]
     try:
         audit = kernel.dehydrate(msgs, half_life=half_life,
@@ -178,23 +256,61 @@ def _apoptose_units(units: list[list[dict]], tail: list[dict], *,
                                  safe_threshold=safe_threshold)
     kept_idx = {int(k[2:k.index("]")]) for k in audit["kept"]}
     survivors = [m for idx, unit in enumerate(units) if idx in kept_idx for m in unit]
-    return survivors + tail, dict(audit, kept=None)
+    purged = [unit for idx, unit in enumerate(units) if idx not in kept_idx]
+    return survivors + tail, dict(audit, kept=None, _purged_units=purged)
+
+
+def _split_quantum(units: list[list[dict]],
+                   quantum: int) -> tuple[list[list[dict]], list[list[dict]]]:
+    """Quantized purge boundary. With `quantum=K`, only units below the boundary
+    `B = (n // K) * K` enter the kernel; units in [B, n) are frozen verbatim.
+    B is a pure function of the unit count, so it only advances once every K new
+    units — and the kernel sees the SAME mobile list for K consecutive turns,
+    making the pruned output byte-identical between advances. Result: provider
+    prompt-cache hits on the PRUNED context, and one batched invalidation per
+    quantum instead of one per turn."""
+    if quantum <= 0:
+        return units, []
+    boundary = (len(units) // quantum) * quantum
+    return units[:boundary], units[boundary:]
+
+
+def _merge_frozen_audit(audit: dict, frozen: list[list[dict]]) -> dict:
+    """Fold the frozen (verbatim) zone back into the audit so the reported
+    reduction is over the WHOLE history, not just the mobile zone."""
+    if not frozen:
+        return audit
+    frozen_tok = sum(len(_unit_text(u)) // 4 for u in frozen)
+    before = int(audit["tokens_before"]) + frozen_tok
+    after = int(audit["tokens_after"]) + frozen_tok
+    return dict(audit, tokens_before=before, tokens_after=after,
+                reduction=(1 - after / before) if before else 0.0,
+                quantum_frozen_units=len(frozen))
 
 
 def dehydrate_messages(messages: list[dict], *, half_life: float,
-                       safe_threshold: float,
-                       stable_prefix: int = 0) -> tuple[list[dict], dict]:
+                       safe_threshold: float, stable_prefix: int = 0,
+                       quantum: int = 0,
+                       auto_fact: bool = False) -> tuple[list[dict], dict]:
     """Deletion-only, order-preserving apoptosis over an OpenAI message list.
     Returns (surviving messages, audit dict). The LAST user message (and
-    everything after it) is the current query — it never enters the filter."""
+    everything after it) is the current query — it never enters the filter.
+    `stable_prefix=-1` = auto: derived from the client's first cache_control
+    breakpoint (see `_auto_stable_prefix`)."""
     last_user = max((i for i, m in enumerate(messages) if m.get("role") == "user"),
                     default=-1)
     if last_user < 0:
         return messages, dict(_EMPTY_AUDIT)
     history, tail = messages[:last_user], messages[last_user:]
-    return _apoptose_units(_group_units(history), tail,
-                           half_life=half_life, safe_threshold=safe_threshold,
-                           stable_prefix=stable_prefix)
+    units = _group_units(history)
+    if stable_prefix < 0:
+        stable_prefix = _auto_stable_prefix(units)
+    mobile, frozen = _split_quantum(units, quantum)
+    survivors, audit = _apoptose_units(
+        mobile, [m for u in frozen for m in u] + tail,
+        half_life=half_life, safe_threshold=safe_threshold,
+        stable_prefix=min(stable_prefix, len(mobile)), auto_fact=auto_fact)
+    return survivors, _merge_frozen_audit(audit, frozen)
 
 
 # --------------------------------------------------------------------------- #
@@ -258,13 +374,62 @@ def redact_image_secrets(messages: list[dict], redactor) -> int:
     return total
 
 
+def _tool_use_ids(msg: dict) -> set:
+    return {b.get("id") for b in _blocks(msg.get("content"))
+            if isinstance(b, dict) and b.get("type") == "tool_use"}
+
+
+def _tool_result_ids(msg: dict) -> set:
+    return {b.get("tool_use_id") for b in _blocks(msg.get("content"))
+            if isinstance(b, dict) and b.get("type") == "tool_result"}
+
+
+def repair_anthropic(survivors: list[dict]) -> list[dict]:
+    """Deletion-only repair pass: whatever apoptosis leaves behind must still be
+    a protocol-valid Anthropic Messages list. Strict upstreams (api.anthropic.com)
+    400 on violations that permissive routers tolerate. Invariants enforced:
+
+      1. the conversation starts with a real `user` turn (no pruned anchor);
+      2. no orphan `tool_result` (its `tool_use` must be the previous message);
+      3. no dangling `tool_use` (its `tool_result` must be the next message).
+
+    Unit grouping already keeps pairs together, so this is a backstop — it only
+    ever DELETES messages, preserving the deletion-only apoptosis contract."""
+    out: list[dict] = []
+    for m in survivors:
+        if not out and m.get("role") != "user":
+            continue                      # (1) leading non-user turns fall
+        if _has_block(m, "tool_result"):
+            prev = out[-1] if out else None
+            paired = (prev is not None and prev.get("role") == "assistant"
+                      and _tool_result_ids(m) <= _tool_use_ids(prev))
+            if not paired:
+                continue                  # (2) orphan tool_result falls
+        out.append(m)
+    # (3) walk backwards: an assistant tool_use not answered by the NEXT message
+    # (e.g. its paired result was dropped above) falls too
+    repaired: list[dict] = []
+    for i, m in enumerate(out):
+        if m.get("role") == "assistant" and _tool_use_ids(m):
+            nxt = out[i + 1] if i + 1 < len(out) else None
+            if nxt is None or not (_tool_use_ids(m) & _tool_result_ids(nxt)):
+                continue
+        repaired.append(m)
+    return repaired
+
+
 def dehydrate_anthropic(messages: list[dict], *, half_life: float,
-                        safe_threshold: float,
-                        stable_prefix: int = 0) -> tuple[list[dict], dict]:
+                        safe_threshold: float, stable_prefix: int = 0,
+                        quantum: int = 0,
+                        auto_fact: bool = False) -> tuple[list[dict], dict]:
     """Apoptosis over Anthropic Messages. `system` is a separate top-level field
     (always forwarded untouched, never purged) so it is not in `messages`. The
     last user turn is the current query and is never filtered; if it carries a
-    `tool_result`, its matching assistant `tool_use` is kept with it (no orphan)."""
+    `tool_result`, its matching assistant `tool_use` is kept with it (no orphan).
+
+    The first unit is ALWAYS in the stable zone (`stable_prefix` floors at 1):
+    strict Messages endpoints reject a conversation whose opening user turn was
+    pruned, and keeping the anchor also protects the provider cache prefix."""
     last_user = max((i for i, m in enumerate(messages) if m.get("role") == "user"),
                     default=-1)
     if last_user < 0:
@@ -276,9 +441,16 @@ def dehydrate_anthropic(messages: list[dict], *, half_life: float,
             and _has_block(messages[last_user - 1], "tool_use")):
         split = last_user - 1
     history, tail = messages[:split], messages[split:]
-    return _apoptose_units(_group_units_anthropic(history), tail,
-                           half_life=half_life, safe_threshold=safe_threshold,
-                           stable_prefix=stable_prefix)
+    units = _group_units_anthropic(history)
+    if stable_prefix < 0:
+        stable_prefix = _auto_stable_prefix(units)
+    mobile, frozen = _split_quantum(units, quantum)
+    survivors, audit = _apoptose_units(
+        mobile, [m for u in frozen for m in u] + tail,
+        half_life=half_life, safe_threshold=safe_threshold,
+        stable_prefix=min(max(1, stable_prefix), len(mobile)) if mobile else 0,
+        auto_fact=auto_fact)
+    return repair_anthropic(survivors), _merge_frozen_audit(audit, frozen)
 
 
 # --------------------------------------------------------------------------- #
@@ -369,7 +541,12 @@ def create_app(*, upstream: Optional[str] = None,
     app.state.threshold = float(os.environ.get("BIOMA_SAFE_THRESHOLD", "0.35"))
     # cache-aware zone: leading history UNITS kept verbatim so a provider
     # prompt-cache prefix stays byte-identical (kernel ≥ 1.1.0)
-    app.state.stable_prefix = int(os.environ.get("BIOMA_STABLE_PREFIX", "0"))
+    _sp = os.environ.get("BIOMA_STABLE_PREFIX", "0").strip().lower()
+    app.state.stable_prefix = -1 if _sp == "auto" else int(_sp)
+    app.state.cache_hysteresis = float(os.environ.get("BIOMA_CACHE_HYSTERESIS", "0.0"))
+    app.state.purge_quantum = int(os.environ.get("BIOMA_PURGE_QUANTUM", "0"))
+    app.state.auto_fact = bool(os.environ.get("BIOMA_AUTO_FACT", ""))
+    app.state.rehydrate_dir = os.environ.get("BIOMA_REHYDRATE_STORE", "")
     # opt-in dynamic thinking budgets via the kernel's effort_gauge (≥ 1.1.0)
     app.state.auto_effort = os.environ.get("BIOMA_AUTO_EFFORT", "") != ""
     app.state.audit_path = os.environ.get("BIOMA_AUDIT_LOG", "bioma_gateway_audit.jsonl")
@@ -404,6 +581,10 @@ def create_app(*, upstream: Optional[str] = None,
             out["x-api-key"] = request.headers["x-api-key"]
         if request.headers.get("anthropic-version"):
             out["anthropic-version"] = request.headers["anthropic-version"]
+        # subscription OAuth (Claude Code login) requires the matching beta
+        # header; OpenRouter-style upstreams simply ignore it.
+        if request.headers.get("anthropic-beta"):
+            out["anthropic-beta"] = request.headers["anthropic-beta"]
         if not out:
             key = os.environ.get("OPENROUTER_API_KEY", "")
             if key:
@@ -441,6 +622,32 @@ def create_app(*, upstream: Optional[str] = None,
             payload["bioma"] = inject
         return JSONResponse(payload, status_code=r.status_code)
 
+    def _store_purged(audit: dict) -> None:
+        """Rehydration store (opt-in): persist each purged unit content-addressed
+        by SHA-256 under `BIOMA_REHYDRATE_STORE`; the hashes go to the audit line
+        so `GET /v1/rehydrate/{hash}` can bring any pruned block back. Local-only,
+        same trust domain as the gateway (nothing leaves the machine)."""
+        purged = audit.pop("_purged_units", None) or []
+        # on a hysteresis HOLD nothing left the wire — nothing to rehydrate later
+        if audit.get("held") or not app.state.rehydrate_dir or not purged:
+            return
+        os.makedirs(app.state.rehydrate_dir, exist_ok=True)
+        hashes = []
+        for unit in purged:
+            blob = json.dumps(unit, ensure_ascii=False,
+                              sort_keys=True).encode("utf-8")
+            digest = hashlib.sha256(blob).hexdigest()
+            path = os.path.join(app.state.rehydrate_dir, f"{digest}.json")
+            if not os.path.exists(path):
+                try:
+                    with open(path, "wb") as f:
+                        f.write(blob)
+                except OSError:
+                    continue
+            hashes.append(digest)
+        if hashes:
+            audit["purged_hashes"] = hashes
+
     def _audit_line(model: str, audit: dict, stream: bool) -> None:
         line = {"ts": time.strftime("%Y-%m-%dT%H:%M:%S"), "model": model,
                 "stream": stream, "tokens_before": int(audit["tokens_before"]),
@@ -450,6 +657,11 @@ def create_app(*, upstream: Optional[str] = None,
                 "blocks_purged": int(audit["blocks_purged"])}
         if audit.get("effort"):
             line["effort"] = audit["effort"]
+        if audit.get("held"):
+            line["held"] = True
+            line["potential_reduction"] = audit.get("potential_reduction", 0.0)
+        if audit.get("purged_hashes"):
+            line["purged_hashes"] = audit["purged_hashes"]
         try:
             with open(app.state.audit_path, "a", encoding="utf-8") as f:
                 f.write(json.dumps(line) + "\n")
@@ -460,7 +672,13 @@ def create_app(*, upstream: Optional[str] = None,
     async def health() -> dict[str, Any]:
         return {"status": "ok", "kernel": getattr(kernel, "__version__", "?"),
                 "upstream": app.state.upstream,
-                "half_life": app.state.half_life, "threshold": app.state.threshold}
+                "half_life": app.state.half_life, "threshold": app.state.threshold,
+                "stable_prefix": ("auto" if app.state.stable_prefix < 0
+                                  else app.state.stable_prefix),
+                "cache_hysteresis": app.state.cache_hysteresis,
+                "purge_quantum": app.state.purge_quantum,
+                "auto_fact": app.state.auto_fact,
+                "rehydrate_store": bool(app.state.rehydrate_dir)}
 
     def _audit_fields(audit: dict) -> dict:
         return {k: audit[k] for k in ("tokens_before", "tokens_after",
@@ -472,7 +690,13 @@ def create_app(*, upstream: Optional[str] = None,
         survivors, audit = dehydrate_messages(
             body.get("messages") or [], half_life=app.state.half_life,
             safe_threshold=app.state.threshold,
-            stable_prefix=app.state.stable_prefix)
+            stable_prefix=app.state.stable_prefix,
+            quantum=app.state.purge_quantum,
+            auto_fact=app.state.auto_fact)
+        survivors, audit = apply_cache_hysteresis(
+            body.get("messages") or [], survivors, audit,
+            app.state.cache_hysteresis)
+        _store_purged(audit)
         if app.state.redact_images:
             redact_image_secrets(survivors, _image_redactor())
         body["messages"] = survivors
@@ -492,7 +716,13 @@ def create_app(*, upstream: Optional[str] = None,
         survivors, audit = dehydrate_anthropic(
             body.get("messages") or [], half_life=app.state.half_life,
             safe_threshold=app.state.threshold,
-            stable_prefix=app.state.stable_prefix)
+            stable_prefix=app.state.stable_prefix,
+            quantum=app.state.purge_quantum,
+            auto_fact=app.state.auto_fact)
+        survivors, audit = apply_cache_hysteresis(
+            body.get("messages") or [], survivors, audit,
+            app.state.cache_hysteresis)
+        _store_purged(audit)
         if app.state.redact_images:
             redact_image_secrets(survivors, _image_redactor())
         body["messages"] = survivors
@@ -502,6 +732,23 @@ def create_app(*, upstream: Optional[str] = None,
         _audit_line(str(body.get("model", "?")), audit, stream)
         # the Anthropic response schema is strict; keep it clean (JSONL audit only)
         return await _forward(request, "/messages", body, stream, inject=None)
+
+    @app.get("/v1/rehydrate/{digest}")
+    async def rehydrate(digest: str):
+        """Return a purged block by its SHA-256 (see `purged_hashes` in the
+        audit line). Nothing is lost to apoptosis — it hibernates locally."""
+        if not app.state.rehydrate_dir:
+            return JSONResponse({"error": "rehydration store disabled "
+                                          "(set BIOMA_REHYDRATE_STORE)"},
+                                status_code=404)
+        if not re.fullmatch(r"[0-9a-f]{64}", digest):
+            return JSONResponse({"error": "invalid digest"}, status_code=400)
+        path = os.path.join(app.state.rehydrate_dir, f"{digest}.json")
+        if not os.path.exists(path):
+            return JSONResponse({"error": "unknown digest"}, status_code=404)
+        with open(path, "rb") as f:
+            unit = json.loads(f.read().decode("utf-8"))
+        return JSONResponse({"digest": digest, "unit": unit})
 
     @app.post("/v1/messages/count_tokens")
     async def count_tokens(request: Request):
